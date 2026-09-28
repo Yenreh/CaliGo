@@ -1,0 +1,111 @@
+name: Build and Release APK
+
+on:
+  push:
+    paths:
+      - 'VERSION'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n\r ')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Update pubspec version
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          sed -i "s/^version: .*/version: $VERSION+${{ github.run_number }}/" pubspec.yaml
+
+      - name: Set up release signing
+        # Every release must carry the same key, or it will not install
+        # over the one before: stop rather than sign with a throwaway key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] \
+             || [ -z "$KEY_PASSWORD" ] || [ -z "$KEY_ALIAS" ]; then
+            echo "::error::Release signing secrets are missing"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.jks
+          {
+            echo "storeFile=release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+          } > android/key.properties
+
+      - name: Build APKs
+        # One APK per ABI: a universal APK bundles the native libraries of
+        # every architecture and is about three times larger.
+        # CARTO_KEY switches the map to CARTO tiles; without it the build
+        # falls back to OpenStreetMap.
+        run: >
+          flutter build apk --release --split-per-abi
+          --target-platform android-arm,android-arm64
+          --dart-define=CARTO_KEY=${{ secrets.CARTO_KEY }}
+
+      - name: Rename APKs
+        run: |
+          cd build/app/outputs/flutter-apk
+          V=${{ steps.version.outputs.version }}
+          mv app-arm64-v8a-release.apk CaliGo-v$V-arm64-v8a.apk
+          mv app-armeabi-v7a-release.apk CaliGo-v$V-armeabi-v7a.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: CaliGo v${{ steps.version.outputs.version }}
+          body: |
+            ## CaliGo v${{ steps.version.outputs.version }}
+            
+            ### Changes
+            - See commit history for details
+            
+            ### Installation
+            1. Download `arm64-v8a` (any phone from the last decade).
+               Use `armeabi-v7a` only on old 32-bit devices.
+            2. Enable "Install from unknown sources" on your device
+            3. Install the APK
+          files: |
+            build/app/outputs/flutter-apk/CaliGo-v${{ steps.version.outputs.version }}-arm64-v8a.apk
+            build/app/outputs/flutter-apk/CaliGo-v${{ steps.version.outputs.version }}-armeabi-v7a.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
