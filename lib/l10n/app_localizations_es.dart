@@ -567,7 +567,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get refreshBalancesOnOpenDesc =>
-      'Consulta el saldo de cada tarjeta al abrir la app, o al volver a ella tras 5 minutos o más';
+      'Consulta el saldo de cada tarjeta cada vez que se abre la app';
 
   @override
   String get cardsShort => 'Tarjetas';

@@ -219,6 +219,6 @@
   "noReleasesYet": "No releases published yet",
   "updateCheckFailed": "Could not check for updates",
   "refreshBalancesOnOpen": "Refresh balances on opening",
-  "refreshBalancesOnOpenDesc": "Asks for every card's balance when the app opens, or comes back after 5 minutes or more",
+  "refreshBalancesOnOpenDesc": "Asks for every card's balance each time the app opens",
   "cardsShort": "Cards"
 }

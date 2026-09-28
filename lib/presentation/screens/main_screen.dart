@@ -52,8 +52,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Do not poll the arrivals service while in the background.
     if (state == AppLifecycleState.resumed) {
-      _refreshBalancesPending = true;
-      _refreshBalancesIfDue();
       if (ref.read(settingsProvider).showsStops) {
         _startWatchingStops();
         _stopsNotifier?.refreshArrivals();
@@ -63,8 +61,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
   }
 
-  /// Set on opening and on coming back; cleared once the balances have
-  /// been dealt with, which waits for the settings and the cards to load
+  /// Set on opening only, not on coming back from the background; cleared
+  /// once the balances have been dealt with, which waits for the settings
+  /// and the cards to load
   bool _refreshBalancesPending = true;
 
   void _refreshBalancesIfDue() {

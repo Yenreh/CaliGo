@@ -92,11 +92,9 @@ class CardsState {
 class CardsNotifier extends Notifier<CardsState> {
   static const _uuid = Uuid();
 
-  /// Coming back sooner than this after the last refresh on opening does
-  /// not ask again: switching between apps is not a new look
-  static const Duration openRefreshGap = Duration(minutes: 5);
-
-  DateTime? _lastOpenRefresh;
+  /// The refresh on opening runs once per launch, never again on coming
+  /// back from the background
+  bool _openRefreshDone = false;
 
   CardRepository get _repository => ref.read(cardRepositoryProvider);
 
@@ -218,7 +216,7 @@ class CardsNotifier extends Notifier<CardsState> {
     }
   }
 
-  /// Refresh every balance as the app opens or comes back, without
+  /// Refresh every balance as the app opens, once per launch, without
   /// announcing it: a card that fails only shows its balance may be out
   /// of date.
   ///
@@ -226,13 +224,10 @@ class CardsNotifier extends Notifier<CardsState> {
   /// can try again once the cards have loaded.
   bool refreshOnOpen() {
     if (state.cards.isEmpty) return false;
-    final last = _lastOpenRefresh;
-    if (last != null && DateTime.now().difference(last) < openRefreshGap) {
-      return true;
-    }
+    if (_openRefreshDone) return true;
+    _openRefreshDone = true;
     if (state.isRefreshingAll || state.refreshingCardId != null) return true;
 
-    _lastOpenRefresh = DateTime.now();
     unawaited(_refreshQuietly());
     return true;
   }

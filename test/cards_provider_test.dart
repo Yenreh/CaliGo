@@ -116,7 +116,7 @@ void main() {
       expect(state.cards.last.balance, 9000);
     });
 
-    test('coming back within a few minutes does not ask again', () async {
+    test('asks only once per launch', () async {
       final repository = _FakeCardRepository([_card('a')]);
       final (notifier, _) = await _ready(repository);
 

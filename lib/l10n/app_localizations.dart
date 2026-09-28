@@ -1079,7 +1079,7 @@ abstract class AppLocalizations {
   /// No description provided for @refreshBalancesOnOpenDesc.
   ///
   /// In en, this message translates to:
-  /// **'Asks for every card\'s balance when the app opens, or comes back after 5 minutes or more'**
+  /// **'Asks for every card\'s balance each time the app opens'**
   String get refreshBalancesOnOpenDesc;
 
   /// No description provided for @cardsShort.

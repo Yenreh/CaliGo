@@ -28,7 +28,7 @@ class SettingsState {
   /// order they were saved in
   final bool sortStopsByProximity;
 
-  /// Ask for every balance when the app opens or comes back after a while
+  /// Ask for every balance when the app opens
   final bool refreshBalancesOnOpen;
 
   /// Dark map tiles, chosen apart from the app theme: dark tiles are
