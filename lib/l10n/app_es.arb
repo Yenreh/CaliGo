@@ -212,5 +212,6 @@
   "noReleasesYet": "Aún no hay versiones publicadas",
   "updateCheckFailed": "No se pudo buscar actualizaciones",
   "refreshBalancesOnOpen": "Actualizar saldos al abrir",
-  "refreshBalancesOnOpenDesc": "Consulta el saldo de cada tarjeta al abrir la app, o al volver a ella tras 5 minutos o más"
+  "refreshBalancesOnOpenDesc": "Consulta el saldo de cada tarjeta al abrir la app, o al volver a ella tras 5 minutos o más",
+  "cardsShort": "Tarjetas"
 }

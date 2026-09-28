@@ -560,4 +560,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get refreshBalancesOnOpenDesc =>
       'Asks for every card\'s balance when the app opens, or comes back after 5 minutes or more';
+
+  @override
+  String get cardsShort => 'Cards';
 }

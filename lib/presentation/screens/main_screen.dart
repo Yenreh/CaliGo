@@ -356,6 +356,22 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+/// A bar button's label on one line: with a large system font it shrinks
+/// to fit rather than wrapping or cutting a word in half
+class _BarLabel extends StatelessWidget {
+  final String text;
+
+  const _BarLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(text, maxLines: 1, softWrap: false),
+    );
+  }
+}
+
 /// The two management screens with the stop search between them,
 /// always in reach
 class _ManageBar extends StatelessWidget {
@@ -386,7 +402,7 @@ class _ManageBar extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => context.push('/cards'),
                     icon: const Icon(Icons.credit_card_outlined, size: 18),
-                    label: Text(l10n.myCards),
+                    label: _BarLabel(l10n.cardsShort),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -407,7 +423,7 @@ class _ManageBar extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: onStops,
                     icon: const Icon(Icons.signpost_outlined, size: 18),
-                    label: Text(l10n.favoritesShort),
+                    label: _BarLabel(l10n.favoritesShort),
                   ),
                 ),
               ],

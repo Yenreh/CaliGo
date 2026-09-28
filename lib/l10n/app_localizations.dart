@@ -1081,6 +1081,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Asks for every card\'s balance when the app opens, or comes back after 5 minutes or more'**
   String get refreshBalancesOnOpenDesc;
+
+  /// No description provided for @cardsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get cardsShort;
 }
 
 class _AppLocalizationsDelegate
