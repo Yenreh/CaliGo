@@ -1,7 +1,7 @@
 name: caligo
 description: CaliGo - Transit cards, stops and lines for Cali.
 publish_to: "none"
-version: 4.0.2+1
+version: 4.0.3+1
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
