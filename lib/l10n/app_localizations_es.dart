@@ -477,19 +477,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get updateArrivals => 'Actualizar llegadas';
 
   @override
-  String get linesToShow => 'Líneas a mostrar';
+  String get linesToShow => 'Rutas a mostrar';
 
   @override
   String get linesToShowHint => 'Sin ninguna elegida se muestran todas';
 
   @override
-  String get noBusesOfLines => 'No viene ninguna de estas líneas';
+  String get noBusesOfLines => 'No viene ninguna de estas rutas';
 
   @override
-  String get linesTab => 'Líneas';
+  String get linesTab => 'Rutas';
 
   @override
-  String get searchLine => 'Buscar línea';
+  String get searchLine => 'Buscar ruta';
 
   @override
   String get lineRunningNow => 'Operando ahora';
@@ -520,7 +520,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get noLineRoute => 'No hay recorrido para esta línea';
+  String get noLineRoute => 'No hay recorrido para esta ruta';
 
   @override
   String get updateBusPositions => 'Actualizar posición de los buses';
