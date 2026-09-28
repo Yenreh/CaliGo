@@ -21,7 +21,7 @@ class CardRemoteDatasource {
     'Accept': 'application/json',
   };
 
-  /// A MIO card number, prefix and suffix included
+  /// A transit card number, prefix and suffix included
   static final RegExp _cardNumber = RegExp(r'^\d{13}$');
 
   /// A second attempt covers a dropped connection; more only press a

@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:miocard/data/datasources/card_remote_datasource.dart';
+import 'package:caligo/data/datasources/card_remote_datasource.dart';
 
 /// Random without jitter so retries are instant in tests.
 class _NoJitterRandom implements Random {

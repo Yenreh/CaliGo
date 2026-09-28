@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:miocard/data/datasources/update_checker.dart';
+import 'package:caligo/data/datasources/update_checker.dart';
 
 const _release = '''
 {"tag_name":"v4.1.0",

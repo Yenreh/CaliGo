@@ -3,12 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:miocard/data/datasources/api_exception.dart';
-import 'package:miocard/data/datasources/json_cache.dart';
-import 'package:miocard/data/datasources/service_guard.dart';
-import 'package:miocard/data/datasources/stops_remote_datasource.dart';
-import 'package:miocard/domain/entities/line_entity.dart';
-import 'package:miocard/domain/entities/stop_entity.dart';
+import 'package:caligo/data/datasources/api_exception.dart';
+import 'package:caligo/data/datasources/json_cache.dart';
+import 'package:caligo/data/datasources/service_guard.dart';
+import 'package:caligo/data/datasources/stops_remote_datasource.dart';
+import 'package:caligo/domain/entities/line_entity.dart';
+import 'package:caligo/domain/entities/stop_entity.dart';
 
 const _arrivalsBody = '''
 [{"idParada":"500800","nombreParada":"Plaza de Cayzedo A1",

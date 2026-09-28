@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:miocard/domain/entities/line_entity.dart';
-import 'package:miocard/domain/entities/stop_entity.dart';
-import 'package:miocard/domain/repositories/stops_repository.dart';
-import 'package:miocard/presentation/providers/stops_provider.dart';
+import 'package:caligo/domain/entities/line_entity.dart';
+import 'package:caligo/domain/entities/stop_entity.dart';
+import 'package:caligo/domain/repositories/stops_repository.dart';
+import 'package:caligo/presentation/providers/stops_provider.dart';
 
 /// Repository that records how the arrivals were asked for
 class _FakeStopsRepository implements StopsRepository {

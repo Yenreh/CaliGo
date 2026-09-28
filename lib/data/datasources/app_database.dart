@@ -11,7 +11,7 @@ class AppDatabase {
   }
 
   static Future<Database> _open() async {
-    final path = join(await getDatabasesPath(), 'miocard.db');
+    final path = join(await getDatabasesPath(), 'caligo.db');
 
     return openDatabase(
       path,

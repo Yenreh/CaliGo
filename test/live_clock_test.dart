@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:miocard/presentation/widgets/live_clock.dart';
+import 'package:caligo/presentation/widgets/live_clock.dart';
 
 /// Counts its own builds, rebuilding on every beat of the clock above
 class _Watcher extends StatelessWidget {

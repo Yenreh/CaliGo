@@ -1,4 +1,4 @@
-name: miocard
+name: caligo
 description: CaliGo - Transit cards, stops and lines for Cali.
 publish_to: "none"
 version: 3.0.0+1

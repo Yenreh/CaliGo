@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:miocard/core/app_info.dart';
-import 'package:miocard/main.dart';
+import 'package:caligo/core/app_info.dart';
+import 'package:caligo/main.dart';
 
 void main() {
   testWidgets('App loads correctly', (WidgetTester tester) async {
