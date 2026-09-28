@@ -553,4 +553,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateCheckFailed => 'Could not check for updates';
+
+  @override
+  String get refreshBalancesOnOpen => 'Refresh balances on opening';
+
+  @override
+  String get refreshBalancesOnOpenDesc =>
+      'Asks for every card\'s balance when the app opens, or comes back after 5 minutes or more';
 }

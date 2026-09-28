@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -90,6 +91,12 @@ class CardsState {
 /// Notifier for cards state management
 class CardsNotifier extends Notifier<CardsState> {
   static const _uuid = Uuid();
+
+  /// Coming back sooner than this after the last refresh on opening does
+  /// not ask again: switching between apps is not a new look
+  static const Duration openRefreshGap = Duration(minutes: 5);
+
+  DateTime? _lastOpenRefresh;
 
   CardRepository get _repository => ref.read(cardRepositoryProvider);
 
@@ -209,6 +216,52 @@ class CardsNotifier extends Notifier<CardsState> {
     } catch (e) {
       state = state.copyWith(error: e.toString(), clearRefreshing: true);
     }
+  }
+
+  /// Refresh every balance as the app opens or comes back, without
+  /// announcing it: a card that fails only shows its balance may be out
+  /// of date.
+  ///
+  /// Returns false while there is nothing to refresh yet, so the caller
+  /// can try again once the cards have loaded.
+  bool refreshOnOpen() {
+    if (state.cards.isEmpty) return false;
+    final last = _lastOpenRefresh;
+    if (last != null && DateTime.now().difference(last) < openRefreshGap) {
+      return true;
+    }
+    if (state.isRefreshingAll || state.refreshingCardId != null) return true;
+
+    _lastOpenRefresh = DateTime.now();
+    unawaited(_refreshQuietly());
+    return true;
+  }
+
+  Future<void> _refreshQuietly() async {
+    state = state.copyWith(isRefreshingAll: true);
+    String? failedCardId;
+
+    // One at a time, like the manual refresh, so the service is not pressed
+    for (final card in state.cards) {
+      try {
+        final balance = await _repository.refreshCardBalance(card);
+        await _repository.updateCardBalance(
+          card.id,
+          balance.balance,
+          balance.balanceDate,
+        );
+      } catch (_) {
+        failedCardId ??= card.id;
+      }
+    }
+
+    await loadCards();
+    state = state.copyWith(
+      isRefreshingAll: false,
+      refreshFailedCardId: failedCardId,
+      // Every card answered: nothing is out of date any more
+      clearRefreshError: failedCardId == null,
+    );
   }
 
   /// Clear the last refresh error and failed card flag

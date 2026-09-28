@@ -1069,6 +1069,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not check for updates'**
   String get updateCheckFailed;
+
+  /// No description provided for @refreshBalancesOnOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh balances on opening'**
+  String get refreshBalancesOnOpen;
+
+  /// No description provided for @refreshBalancesOnOpenDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for every card\'s balance when the app opens, or comes back after 5 minutes or more'**
+  String get refreshBalancesOnOpenDesc;
 }
 
 class _AppLocalizationsDelegate

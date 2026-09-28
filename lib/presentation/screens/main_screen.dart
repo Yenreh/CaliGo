@@ -52,12 +52,33 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Do not poll the arrivals service while in the background.
     if (state == AppLifecycleState.resumed) {
+      _refreshBalancesPending = true;
+      _refreshBalancesIfDue();
       if (ref.read(settingsProvider).showsStops) {
         _startWatchingStops();
         _stopsNotifier?.refreshArrivals();
       }
     } else {
       _stopWatchingStops();
+    }
+  }
+
+  /// Set on opening and on coming back; cleared once the balances have
+  /// been dealt with, which waits for the settings and the cards to load
+  bool _refreshBalancesPending = true;
+
+  void _refreshBalancesIfDue() {
+    if (!_refreshBalancesPending) return;
+    final settings = ref.read(settingsProvider);
+    if (settings.isLoading) return;
+    if (!settings.refreshBalancesOnOpen || !settings.showsCards) {
+      _refreshBalancesPending = false;
+      return;
+    }
+    if (ref.read(cardsProvider).isLoading) return;
+    // False until the cards are there to refresh
+    if (ref.read(cardsProvider.notifier).refreshOnOpen()) {
+      _refreshBalancesPending = false;
     }
   }
 
@@ -113,7 +134,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final compactCards = showsBoth && state.cards.length > 1;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _syncStopsWatch(showsStops);
+      if (!mounted) return;
+      _syncStopsWatch(showsStops);
+      _refreshBalancesIfDue();
     });
 
     listenCardRefresh(context, ref, l10n);

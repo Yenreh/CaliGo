@@ -28,6 +28,9 @@ class SettingsState {
   /// order they were saved in
   final bool sortStopsByProximity;
 
+  /// Ask for every balance when the app opens or comes back after a while
+  final bool refreshBalancesOnOpen;
+
   /// Dark map tiles, chosen apart from the app theme: dark tiles are
   /// harder to read, so the map stays light unless asked
   final bool darkMap;
@@ -41,6 +44,7 @@ class SettingsState {
     this.homeContent = HomeContent.cards,
     this.sortStopsByProximity = true,
     this.darkMap = false,
+    this.refreshBalancesOnOpen = true,
     this.isLoading = true,
   });
 
@@ -50,6 +54,7 @@ class SettingsState {
     HomeContent? homeContent,
     bool? sortStopsByProximity,
     bool? darkMap,
+    bool? refreshBalancesOnOpen,
     bool? isLoading,
   }) {
     return SettingsState(
@@ -58,6 +63,8 @@ class SettingsState {
       homeContent: homeContent ?? this.homeContent,
       sortStopsByProximity: sortStopsByProximity ?? this.sortStopsByProximity,
       darkMap: darkMap ?? this.darkMap,
+      refreshBalancesOnOpen:
+          refreshBalancesOnOpen ?? this.refreshBalancesOnOpen,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -82,6 +89,7 @@ class SettingsState {
         'homeContent': homeContent.index,
         'sortStopsByProximity': sortStopsByProximity,
         'darkMap': darkMap,
+        'refreshBalancesOnOpen': refreshBalancesOnOpen,
       };
 
   factory SettingsState.fromJson(Map<String, dynamic> json) {
@@ -92,6 +100,7 @@ class SettingsState {
           HomeContent.values[json['homeContent'] as int? ?? 0],
       sortStopsByProximity: json['sortStopsByProximity'] as bool? ?? true,
       darkMap: json['darkMap'] as bool? ?? false,
+      refreshBalancesOnOpen: json['refreshBalancesOnOpen'] as bool? ?? true,
       isLoading: false,
     );
   }
@@ -156,6 +165,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   void setHomeContent(HomeContent content) {
     state = state.copyWith(homeContent: content);
+    _saveSettings();
+  }
+
+  void setRefreshBalancesOnOpen(bool enabled) {
+    state = state.copyWith(refreshBalancesOnOpen: enabled);
     _saveSettings();
   }
 

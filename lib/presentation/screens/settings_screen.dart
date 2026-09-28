@@ -227,6 +227,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
 
+          // Cards section
+          _SectionHeader(title: l10n.myCards),
+          _SettingsCard(
+            child: ListTile(
+              leading: const Icon(Icons.sync_rounded),
+              title: Text(l10n.refreshBalancesOnOpen),
+              subtitle: Text(l10n.refreshBalancesOnOpenDesc),
+              trailing: LabSwitch(
+                value: settings.refreshBalancesOnOpen,
+                onChanged: settingsNotifier.setRefreshBalancesOnOpen,
+              ),
+              onTap: () => settingsNotifier.setRefreshBalancesOnOpen(
+                !settings.refreshBalancesOnOpen,
+              ),
+            ),
+          ),
+
           // Fare Section
           _SectionHeader(title: l10n.fare),
           _SettingsCard(

@@ -217,5 +217,7 @@
   "@downloadUpdate": {"placeholders": {"version": {"type": "String"}}},
   "updateInstallHint": "Open the downloaded file to install it over this version; your data stays.",
   "noReleasesYet": "No releases published yet",
-  "updateCheckFailed": "Could not check for updates"
+  "updateCheckFailed": "Could not check for updates",
+  "refreshBalancesOnOpen": "Refresh balances on opening",
+  "refreshBalancesOnOpenDesc": "Asks for every card's balance when the app opens, or comes back after 5 minutes or more"
 }
