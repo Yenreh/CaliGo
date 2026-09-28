@@ -88,3 +88,7 @@ dart_defines.json
 # Notes kept out of the repository: research on the services the app
 # reads, for maintaining it when they change
 private/
+
+# Signing keys never enter the repository, wherever they are dropped
+*.jks
+*.keystore
