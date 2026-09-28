@@ -1,94 +1,114 @@
 # CaliGo
 
-Una aplicación Flutter para consultar tarjetas, paradas y líneas del MIO,
-el sistema de transporte masivo de Cali.
+A Flutter app to check the cards, stops and lines of the MIO, the mass
+transit system of Cali, Colombia.
 
-> App no oficial, sin relación con Metro Cali S.A. Los datos vienen de sus
-> servicios públicos ([metrocali.gov.co](https://www.metrocali.gov.co)) y
-> pueden no ser exactos. Sin fines comerciales.
+> Unofficial app, not affiliated with Metro Cali S.A. The data comes from
+> its public services ([metrocali.gov.co](https://www.metrocali.gov.co))
+> and may not be accurate. No commercial purpose.
 
-## Características
+## Download
 
-- **Gestión de Tarjetas**: Crear, ver, editar y eliminar tarjetas de transporte
-- **Consulta de Saldo**: Desde el servicio público de Metrocali
-- **Paradas Favoritas**: Tablero con los próximos buses de cada parada guardada
-- **Mapa**: Buscar paradas en cualquier punto de la ciudad, sobre mapas de CARTO
-- **Líneas**: Recorrido de cada línea, sus buses en vivo y su horario
-- **Almacenamiento Local**: Persistencia usando SQLite (sqflite)
-- **Soporte Multilenguaje**: Español e Inglés
-- **Diseño**: estilo "lab report" compartido con NetSpeedDiag y las extensiones
-- **Dark Mode**: Tema oscuro automático según el sistema
+Get the APK from the [releases](https://github.com/Yenreh/CaliGo/releases):
+`arm64-v8a` for any phone from the last decade, `armeabi-v7a` only for old
+32-bit ones. Every release is signed with the same key, so a new one
+installs over the previous one and keeps your data. The app can look for a
+newer release from Settings > About, on request only.
 
-## Stack Tecnológico
+## Features
 
-- **Framework**: Flutter 3.x
-- **State Management**: Riverpod
-- **Base de Datos**: SQLite (sqflite)
-- **Networking**: http package
-- **Mapas**: flutter_map sobre teselas de OpenStreetMap
-- **Ubicación**: geolocator
-- **Navegación**: go_router
-- **Tipografías**: Google Fonts (Inter)
+- **Cards**: add, edit, reorder and delete transit cards, with the fares
+  their balance covers
+- **Balance**: from Metrocali's public service, refreshed on opening the
+  app (optional)
+- **Favorite stops**: the next buses at each saved stop, with the lines to
+  show per stop, which ones appear on the home screen, and their order
+  saved or by proximity
+- **Map**: look up stops anywhere in the city, on CARTO maps, light or dark
+- **Lines**: each line's route, its live buses going each way, and its
+  hours
+- **Local storage**: everything stays on the device, in SQLite, with JSON
+  export and import
+- **Languages**: Spanish and English
+- **Design**: the "lab report" style shared with NetSpeedDiag and the
+  browser extensions, in light and dark themes
 
-## Estructura del Proyecto
+## Stack
+
+- **Framework**: Flutter 3.38
+- **State management**: Riverpod
+- **Database**: SQLite (sqflite)
+- **Networking**: http
+- **Maps**: flutter_map on CARTO tiles over OpenStreetMap data
+- **Location**: geolocator
+- **Navigation**: go_router
+- **Type**: Fraunces, IBM Plex Sans and IBM Plex Mono, bundled with the app
+
+## Project layout
 
 ```
 lib/
-├── core/                    # Utilidades compartidas
-│   ├── theme/               # Tema y estilos
-│   └── utils/               # Utilidades
-├── data/                    # Data Layer
-│   ├── datasources/         # Fuentes de datos
+├── core/                    # Theme, app info, shared utilities
+├── data/                    # Data layer
+│   ├── datasources/         # Services, database, caches
 │   ├── models/              # DTOs
-│   └── repositories/        # Implementaciones
-├── domain/                  # Domain Layer
-│   ├── entities/            # Entidades
+│   └── repositories/        # Implementations
+├── domain/                  # Domain layer
+│   ├── entities/            # Entities
 │   └── repositories/        # Interfaces
-├── presentation/            # Presentation Layer
+├── presentation/            # Presentation layer
 │   ├── providers/           # Riverpod providers
-│   ├── screens/             # Pantallas
-│   ├── widgets/             # Componentes
-│   └── routes/              # Navegación
-├── l10n/                    # Localización
+│   ├── screens/             # Screens
+│   ├── widgets/             # Components
+│   └── routes/              # Navigation
+├── l10n/                    # Localization
 └── main.dart                # Entry point
 ```
 
-## Instalación
-
-1. Asegúrate de tener Flutter instalado
-2. Clona el repositorio
-3. Ejecuta `flutter pub get`
-4. Ejecuta `flutter run`
-
-## Comandos
+## Building
 
 ```bash
-# Instalar dependencias
 flutter pub get
+flutter test
 
-# Ejecutar en modo debug
-flutter run
+# Debug on a device
+flutter run --dart-define-from-file=dart_defines.json
 
-# Compilar APK
-flutter build apk
-
-# Compilar para iOS
-flutter build ios
+# Release APKs, one per ABI
+flutter build apk --release --split-per-abi \
+  --target-platform android-arm,android-arm64 \
+  --dart-define-from-file=dart_defines.json
 ```
 
-## Datos
+`dart_defines.json` holds the CARTO key and is never committed; copy
+`dart_defines.example.json` and fill it in. Without a key the map falls back
+to OpenStreetMap tiles.
 
-Todos los datos vienen de servicios públicos de Metro Cali S.A., que
-permite reutilizar su información con fines informativos y no comerciales,
-citando la fuente con un enlace a [metrocali.gov.co](https://www.metrocali.gov.co).
-Qué servicios se consultan y cómo, en [docs/api.md](docs/api.md).
+Release builds are signed with the key described by `key.properties`, never
+committed either: `android/key.properties`, which the release workflow
+writes from its secrets, or `private/signing/key.properties` next to the key
+for local builds. Without one, release builds use the debug key.
 
-## Licencia
+## Releases
 
-CaliGo es software libre bajo la [GNU GPL v3 o posterior](LICENSE):
-cualquiera puede usarlo, estudiarlo, modificarlo y redistribuirlo, siempre
-que conserve este aviso y que lo que publique con este código siga siendo
-libre, con su fuente disponible bajo la misma licencia.
+Changing `VERSION` on `main` builds, signs and publishes a release, with
+the notes in `docs/releases/<version>.md` when that file exists. The
+workflow needs the `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`,
+`KEY_ALIAS` and `CARTO_KEY` secrets, and stops without the signing ones.
+
+## Data
+
+All the data comes from public services of Metro Cali S.A., which allows
+reusing its information for informative, non-commercial ends, citing the
+source with a link to [metrocali.gov.co](https://www.metrocali.gov.co).
+Which services the app reads, and how, is in [docs/api.md](docs/api.md).
+
+## License
+
+CaliGo is free software under the [GNU GPL v3 or later](LICENSE): anyone
+may use, study, modify and redistribute it, as long as they keep this
+notice and whatever they publish with this code stays free, with its
+source available under the same license.
 
 ```
 CaliGo
@@ -105,6 +125,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ```
 
-Las fuentes (Fraunces, IBM Plex Sans y Mono) tienen su propia licencia OFL,
-en `assets/fonts`. Los mapas son de © OpenStreetMap y © CARTO, y los datos
-de transporte pertenecen a Metrocali.
+The fonts (Fraunces, IBM Plex Sans and Mono) carry their own OFL license,
+in `assets/fonts`. Maps © OpenStreetMap contributors and © CARTO; the
+transit data belongs to Metro Cali S.A.
