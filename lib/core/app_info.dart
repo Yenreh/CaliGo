@@ -8,7 +8,9 @@ class AppInfo {
   /// tile servers
   static const String packageId = 'com.yenreh.caligo';
 
-  static const String repository = 'https://github.com/Yenreh/CaliGo';
+  /// GitHub owner/name: its page, and the releases updates come from
+  static const String githubRepo = 'Yenreh/CaliGo';
+  static const String repository = 'https://github.com/$githubRepo';
 
   /// Where the transit data comes from. Metro Cali allows its reuse for
   /// non-commercial, informative ends, citing it with a link to its site.

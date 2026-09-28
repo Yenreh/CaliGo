@@ -203,5 +203,12 @@
   "noLineRoute": "No hay recorrido para esta línea",
   "updateBusPositions": "Actualizar posición de los buses",
   "unofficialNotice": "App no oficial, sin relación con Metro Cali. Las llegadas, saldos y rutas vienen de sus servicios públicos y pueden no ser exactos.",
-  "dataFrom": "Datos: {source}"
+  "dataFrom": "Datos: {source}",
+  "checkUpdates": "Buscar actualizaciones",
+  "upToDate": "Tienes la última versión ({version})",
+  "updateAvailable": "Está disponible la versión {version}",
+  "downloadUpdate": "Descargar {version}",
+  "updateInstallHint": "Abre el archivo descargado para instalarlo sobre esta versión; tus datos se conservan.",
+  "noReleasesYet": "Aún no hay versiones publicadas",
+  "updateCheckFailed": "No se pudo buscar actualizaciones"
 }

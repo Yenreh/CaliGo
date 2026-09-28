@@ -207,5 +207,15 @@
   "updateBusPositions": "Update bus positions",
   "unofficialNotice": "Unofficial app, not affiliated with Metro Cali. Arrivals, balances and routes come from its public services and may not be accurate.",
   "dataFrom": "Data: {source}",
-  "@dataFrom": {"placeholders": {"source": {"type": "String"}}}
+  "@dataFrom": {"placeholders": {"source": {"type": "String"}}},
+  "checkUpdates": "Check for updates",
+  "upToDate": "You have the latest version ({version})",
+  "@upToDate": {"placeholders": {"version": {"type": "String"}}},
+  "updateAvailable": "Version {version} is available",
+  "@updateAvailable": {"placeholders": {"version": {"type": "String"}}},
+  "downloadUpdate": "Download {version}",
+  "@downloadUpdate": {"placeholders": {"version": {"type": "String"}}},
+  "updateInstallHint": "Open the downloaded file to install it over this version; your data stays.",
+  "noReleasesYet": "No releases published yet",
+  "updateCheckFailed": "Could not check for updates"
 }

@@ -1027,6 +1027,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data: {source}'**
   String dataFrom(String source);
+
+  /// No description provided for @checkUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get checkUpdates;
+
+  /// No description provided for @upToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'You have the latest version ({version})'**
+  String upToDate(String version);
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available'**
+  String updateAvailable(String version);
+
+  /// No description provided for @downloadUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {version}'**
+  String downloadUpdate(String version);
+
+  /// No description provided for @updateInstallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the downloaded file to install it over this version; your data stays.'**
+  String get updateInstallHint;
+
+  /// No description provided for @noReleasesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No releases published yet'**
+  String get noReleasesYet;
+
+  /// No description provided for @updateCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check for updates'**
+  String get updateCheckFailed;
 }
 
 class _AppLocalizationsDelegate

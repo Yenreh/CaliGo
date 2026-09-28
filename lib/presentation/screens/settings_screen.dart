@@ -7,7 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/app_info.dart';
 import '../../data/datasources/json_cache.dart';
+import '../../data/datasources/api_exception.dart';
 import '../../data/datasources/map_tile_cache.dart';
+import '../../data/datasources/update_checker.dart';
 import '../../l10n/app_localizations.dart';
 import '../providers/settings_provider.dart';
 import '../providers/cards_provider.dart';
@@ -25,6 +27,12 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _farePriceController = TextEditingController();
   String _appVersion = '';
+
+  final _updates = UpdateChecker();
+  bool _checkingUpdates = false;
+
+  /// What the last check found; null until the user asks
+  ({String text, Color? color, AppRelease? release})? _updateResult;
   final _cache = JsonCache();
   int _cacheBytes = 0;
 
@@ -53,6 +61,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await Future.wait([_cache.clear(), MapTileCache.clear()]);
     await _loadCacheSize();
     messenger.showSnackBar(snackBar);
+  }
+
+  /// Only on request: nothing is asked of GitHub in the background
+  Future<void> _checkForUpdates(AppLocalizations l10n, LabPalette p) async {
+    setState(() => _checkingUpdates = true);
+    ({String text, Color? color, AppRelease? release}) result;
+    try {
+      final release = await _updates.latest();
+      if (release == null) {
+        result = (text: l10n.noReleasesYet, color: null, release: null);
+      } else if (UpdateChecker.isNewer(release.version, _appVersion)) {
+        result = (
+          text: l10n.updateAvailable(release.version),
+          color: p.ok,
+          release: release,
+        );
+      } else {
+        result = (text: l10n.upToDate(_appVersion), color: null, release: null);
+      }
+    } on ApiException {
+      result = (text: l10n.updateCheckFailed, color: p.crit, release: null);
+    }
+    if (!mounted) return;
+    setState(() {
+      _checkingUpdates = false;
+      _updateResult = result;
+    });
   }
 
   Future<void> _loadAppVersion() async {
@@ -307,7 +342,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       if (_appVersion.isNotEmpty) LabChip('v$_appVersion'),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  _UpdateCheck(
+                    checking: _checkingUpdates,
+                    result: _updateResult,
+                    onCheck: () => _checkForUpdates(l10n, p),
+                  ),
+                  const SizedBox(height: 12),
                   // Not the operator's app, and the data is the operator's:
                   // both said plainly, with the link Metro Cali asks for
                   Text(l10n.unofficialNotice, style: LabText.statusLine(p)),
@@ -398,6 +439,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     }
+  }
+}
+
+/// Button that asks for the latest release, what it found, and the way to
+/// download a newer one: the browser fetches the APK, and Android installs
+/// it over this one from the download, so the app needs no permission
+class _UpdateCheck extends StatelessWidget {
+  final bool checking;
+  final ({String text, Color? color, AppRelease? release})? result;
+  final VoidCallback onCheck;
+
+  const _UpdateCheck({
+    required this.checking,
+    required this.result,
+    required this.onCheck,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LabPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final found = result;
+    final release = found?.release;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        OutlinedButton.icon(
+          onPressed: checking ? null : onCheck,
+          icon:
+              checking
+                  ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: p.accent,
+                    ),
+                  )
+                  : const Icon(Icons.system_update_alt_rounded, size: 18),
+          label: Text(l10n.checkUpdates),
+        ),
+        if (found != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            found.text,
+            style: LabText.statusLine(p).copyWith(color: found.color),
+          ),
+        ],
+        if (release != null) ...[
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed:
+                () => launchUrl(
+                  release.apk ?? release.page,
+                  mode: LaunchMode.externalApplication,
+                ),
+            icon: const Icon(Icons.download_rounded, size: 18),
+            label: Text(l10n.downloadUpdate(release.version)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.updateInstallHint,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
   }
 }
 

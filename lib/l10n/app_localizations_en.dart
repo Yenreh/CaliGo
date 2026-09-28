@@ -525,4 +525,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String dataFrom(String source) {
     return 'Data: $source';
   }
+
+  @override
+  String get checkUpdates => 'Check for updates';
+
+  @override
+  String upToDate(String version) {
+    return 'You have the latest version ($version)';
+  }
+
+  @override
+  String updateAvailable(String version) {
+    return 'Version $version is available';
+  }
+
+  @override
+  String downloadUpdate(String version) {
+    return 'Download $version';
+  }
+
+  @override
+  String get updateInstallHint =>
+      'Open the downloaded file to install it over this version; your data stays.';
+
+  @override
+  String get noReleasesYet => 'No releases published yet';
+
+  @override
+  String get updateCheckFailed => 'Could not check for updates';
 }
