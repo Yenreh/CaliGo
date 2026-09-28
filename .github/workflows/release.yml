@@ -86,22 +86,30 @@ jobs:
           mv app-arm64-v8a-release.apk CaliGo-v$V-arm64-v8a.apk
           mv app-armeabi-v7a-release.apk CaliGo-v$V-armeabi-v7a.apk
 
+      - name: Release notes
+        # docs/releases/<version>.md when the version has its own notes
+        run: |
+          V=${{ steps.version.outputs.version }}
+          if [ -f "docs/releases/$V.md" ]; then
+            cp "docs/releases/$V.md" release-notes.md
+          else
+            {
+              echo "## CaliGo v$V"
+              echo
+              echo "### Installation"
+              echo "1. Download \`arm64-v8a\` (any phone from the last decade)."
+              echo "   Use \`armeabi-v7a\` only on old 32-bit devices."
+              echo "2. Enable \"Install from unknown sources\" on your device"
+              echo "3. Install the APK over the previous version; your data stays"
+            } > release-notes.md
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: CaliGo v${{ steps.version.outputs.version }}
-          body: |
-            ## CaliGo v${{ steps.version.outputs.version }}
-            
-            ### Changes
-            - See commit history for details
-            
-            ### Installation
-            1. Download `arm64-v8a` (any phone from the last decade).
-               Use `armeabi-v7a` only on old 32-bit devices.
-            2. Enable "Install from unknown sources" on your device
-            3. Install the APK
+          body_path: release-notes.md
           files: |
             build/app/outputs/flutter-apk/CaliGo-v${{ steps.version.outputs.version }}-arm64-v8a.apk
             build/app/outputs/flutter-apk/CaliGo-v${{ steps.version.outputs.version }}-armeabi-v7a.apk
