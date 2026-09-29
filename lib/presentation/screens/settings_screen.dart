@@ -123,7 +123,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          20,
+          16,
+          32 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           // Theme Section
           _SectionHeader(title: l10n.appearance),

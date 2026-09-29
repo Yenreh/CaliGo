@@ -367,7 +367,7 @@ void main() {
       // The hop saves under a minute and costs a change of bus
       final options = TripPlanner(
         network,
-        headways: {'A5': const Duration(seconds: 510)},
+        headways: {'A5': const Duration(seconds: 690)},
       ).plan(from, to);
 
       expect(options.map((o) => o.rides.map((r) => r.line).join('>')), [

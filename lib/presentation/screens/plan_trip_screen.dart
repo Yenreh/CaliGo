@@ -881,59 +881,69 @@ class _OptionTile extends StatelessWidget {
       l10n.walkDistance(_roundTo10(option.walkMeters)),
     ].join(' · ');
 
+    // Only the summary opens and closes the option: the steps below hold
+    // buttons, and a tap beside one should not fold them away
     return Material(
       color: expanded ? p.paper2 : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: expanded ? p.accent : Colors.transparent,
-                width: 3,
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: expanded ? p.accent : Colors.transparent,
+              width: 3,
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(13, 12, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    l10n.minutesShort(_minutes(option.duration)),
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const Spacer(),
-                  Text(
-                    option.isLive
-                        ? l10n.arriveAt(arrival)
-                        : l10n.arriveAround(arrival),
-                    style: LabText.statusLine(p),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    expanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 22,
-                    color: p.muted,
-                  ),
-                ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(13, 12, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          l10n.minutesShort(_minutes(option.duration)),
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const Spacer(),
+                        Text(
+                          option.isLive
+                              ? l10n.arriveAt(arrival)
+                              : l10n.arriveAround(arrival),
+                          style: LabText.statusLine(p),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          expanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: 22,
+                          color: p.muted,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _LegsStrip(option: option),
+                    const SizedBox(height: 8),
+                    if (firstRide != null) _FirstBus(ride: firstRide),
+                    Text(facts, style: LabText.statusLine(p)),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              _LegsStrip(option: option),
-              const SizedBox(height: 8),
-              if (firstRide != null) _FirstBus(ride: firstRide),
-              Text(facts, style: LabText.statusLine(p)),
-              if (expanded) ...[
-                const SizedBox(height: 12),
-                _Steps(option: option, onChooseLine: onChooseLine),
-              ],
-            ],
-          ),
+            ),
+            if (expanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(13, 0, 16, 12),
+                child: _Steps(option: option, onChooseLine: onChooseLine),
+              ),
+          ],
         ),
       ),
     );

@@ -65,7 +65,12 @@ class CardsScreen extends ConsumerWidget {
               )
               // Hold a card and drag it to change the order
               : ReorderableListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  96 + MediaQuery.paddingOf(context).bottom,
+                ),
                 itemCount: state.cards.length,
                 onReorder: notifier.reorderCards,
                 proxyDecorator: labDragProxy,

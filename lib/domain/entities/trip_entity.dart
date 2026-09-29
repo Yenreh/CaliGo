@@ -62,8 +62,9 @@ class WalkLeg extends TripLeg {
     this.toStop,
   });
 
-  /// Walking pace, in metres a second
-  static const double speed = 1.2;
+  /// Walking pace, in metres a second: an unhurried 3.6 km/h, with
+  /// crossings, bags and the heat of Cali
+  static const double speed = 1.0;
 
   /// Sidewalks bend: a walk is longer than the straight line
   static const double detour = 1.3;

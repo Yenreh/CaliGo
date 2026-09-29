@@ -205,7 +205,12 @@ class _StopsScreenState extends ConsumerState<StopsScreen> with ShownOnScreen {
                   // In the saved order a stop can be held and dragged;
                   // sorted by proximity, the distance decides instead
                   child: ReorderableListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      96 + MediaQuery.paddingOf(context).bottom,
+                    ),
                     itemCount: state.favorites.length,
                     buildDefaultDragHandles: !sortedByProximity,
                     onReorder: notifier.reorderFavorites,

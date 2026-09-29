@@ -251,7 +251,10 @@ class _NearbyTab extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(nearbyStopsProvider),
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.only(
+              top: 8,
+              bottom: 8 + MediaQuery.paddingOf(context).bottom,
+            ),
             itemCount: result.stops.length,
             separatorBuilder: (_, _) => const Divider(),
             itemBuilder: (context, index) {

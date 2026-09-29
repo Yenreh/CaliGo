@@ -294,6 +294,7 @@ class _MapPointPickerState extends ConsumerState<_MapPointPicker> {
     final dark = ref.watch(settingsProvider.select((s) => s.darkMap));
     final sharp = ref.watch(settingsProvider.select((s) => s.sharpMap));
     final tiles = tilesPalette(dark: dark);
+    final inset = MediaQuery.paddingOf(context).bottom;
     final near = widget.near;
 
     return Scaffold(
@@ -325,9 +326,11 @@ class _MapPointPickerState extends ConsumerState<_MapPointPicker> {
           IgnorePointer(
             child: Icon(Icons.add_rounded, size: 36, color: p.crit),
           ),
+          // The map runs under the system's navigation buttons; the
+          // controls stay clear of them
           Positioned(
             left: 12,
-            bottom: 12,
+            bottom: 12 + inset,
             child: MapCredits(
               open: _creditsOpen,
               onToggle: () => setState(() => _creditsOpen = !_creditsOpen),
@@ -337,7 +340,7 @@ class _MapPointPickerState extends ConsumerState<_MapPointPicker> {
           Positioned(
             left: 72,
             right: 72,
-            bottom: 16,
+            bottom: 16 + inset,
             child: FilledButton.icon(
               onPressed:
                   () => Navigator.of(context).pop(_mapController.camera.center),
