@@ -6,6 +6,7 @@ import '../screens/settings_screen.dart';
 import '../screens/stops_screen.dart';
 import '../screens/cards_screen.dart';
 import '../screens/add_stop_screen.dart';
+import '../screens/plan_trip_screen.dart';
 
 /// App router configuration
 final appRouter = GoRouter(
@@ -51,6 +52,11 @@ final appRouter = GoRouter(
       path: '/search',
       name: 'searchStops',
       builder: (context, state) => const AddStopScreen(explore: true),
+    ),
+    GoRoute(
+      path: '/plan',
+      name: 'planTrip',
+      builder: (context, state) => const PlanTripScreen(),
     ),
     GoRoute(
       path: '/settings',

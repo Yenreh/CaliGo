@@ -457,6 +457,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dark tiles on the stops map, whatever the app theme';
 
   @override
+  String get sharpMap => 'Sharp map';
+
+  @override
+  String get sharpMapDesc =>
+      'Maps at the screen\'s full resolution. Off, they use less mobile data and look a little softer';
+
+  @override
   String get findStops => 'Find stops';
 
   @override
@@ -563,4 +570,159 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardsShort => 'Cards';
+
+  @override
+  String get planTrip => 'Plan a trip';
+
+  @override
+  String get chooseOrigin => 'Where from?';
+
+  @override
+  String get chooseDestination => 'Where to?';
+
+  @override
+  String get swapPlaces => 'Swap origin and destination';
+
+  @override
+  String get pickOnMap => 'Pick on the map';
+
+  @override
+  String get usePoint => 'Use this point';
+
+  @override
+  String get pointOnMap => 'Point on the map';
+
+  @override
+  String nearStop(String stop) {
+    return 'Near $stop';
+  }
+
+  @override
+  String get searchPlace => 'Search a station or stop';
+
+  @override
+  String get stopsSection => 'Stops';
+
+  @override
+  String loadingRoutes(int done, int total) {
+    return 'Loading MIO routes ($done/$total)';
+  }
+
+  @override
+  String get planHint =>
+      'Choose where you leave from and where you are going to see how to get there.';
+
+  @override
+  String get noTripFound =>
+      'No MIO trip found between these two places at this time.';
+
+  @override
+  String get tripEstimateNote =>
+      'Live times from MIO. Anything marked ~ is approximate: no bus on its way confirms it, so the line\'s usual figures are used.';
+
+  @override
+  String arriveAround(String time) {
+    return 'Arrive ~$time';
+  }
+
+  @override
+  String transfersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transfers',
+      one: '1 transfer',
+      zero: 'Direct',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String walkDistance(int meters) {
+    return '$meters m on foot';
+  }
+
+  @override
+  String nextBusNow(String line) {
+    return '$line arriving';
+  }
+
+  @override
+  String stepWalkTo(int minutes, String stop) {
+    return 'Walk $minutes min to $stop';
+  }
+
+  @override
+  String stepWalkToDestination(int minutes) {
+    return 'Walk $minutes min to your destination';
+  }
+
+  @override
+  String stepRide(String lines, String towards) {
+    return 'Take $lines towards $towards';
+  }
+
+  @override
+  String stepGetOff(String stop) {
+    return 'Get off at $stop';
+  }
+
+  @override
+  String get couldNotLocate => 'Could not get your location';
+
+  @override
+  String get openInGoogleMaps => 'Open this search in Google Maps';
+
+  @override
+  String get goHere => 'Go here';
+
+  @override
+  String get updateLocation => 'Update my location';
+
+  @override
+  String get lineChoiceHint =>
+      'Any of these lines will do; tap one to see its route';
+
+  @override
+  String get refreshTimes => 'Update times';
+
+  @override
+  String get liveUnavailable =>
+      'No live MIO data for some stretches: those times are approximate.';
+
+  @override
+  String arriveAt(String time) {
+    return 'Arrive $time';
+  }
+
+  @override
+  String busLeavesAt(String line, String time, int minutes) {
+    return '$line at $time (in $minutes min)';
+  }
+
+  @override
+  String noLiveBus(int minutes) {
+    return 'No live bus · about $minutes min wait';
+  }
+
+  @override
+  String leavesAt(String time) {
+    return 'Leaves $time';
+  }
+
+  @override
+  String waitAbout(int minutes) {
+    return 'Wait ~$minutes min';
+  }
+
+  @override
+  String stopsCount(int stops) {
+    String _temp0 = intl.Intl.pluralLogic(
+      stops,
+      locale: localeName,
+      other: '$stops stops',
+      one: '1 stop',
+    );
+    return '$_temp0';
+  }
 }

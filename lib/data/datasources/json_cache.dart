@@ -17,12 +17,25 @@ class JsonCache {
   JsonCache();
 
   /// Cached value for [key], or null when missing or older than [maxAge]
-  Future<Object?> read(String key, {Duration? maxAge}) async {
+  Future<Object?> read(
+    String key, {
+    Duration? maxAge,
+    bool remember = true,
+  }) async {
+    final entry = await readEntry(key, remember: remember);
+    if (entry == null || _isStale(entry.savedAt, maxAge)) return null;
+    return entry.value;
+  }
+
+  /// Cached value for [key] however old, with when it was saved; null
+  /// when missing. [remember] keeps it in memory for the next read, which
+  /// a large value read once a run is better without.
+  Future<({DateTime savedAt, Object? value})?> readEntry(
+    String key, {
+    bool remember = true,
+  }) async {
     final cached = _memory[key];
-    if (cached != null) {
-      if (!_isStale(cached.savedAt, maxAge)) return cached.value;
-      _memory.remove(key);
-    }
+    if (cached != null) return cached;
 
     try {
       final file = await _fileFor(key);
@@ -31,22 +44,27 @@ class JsonCache {
       final decoded = json.decode(await file.readAsString());
       if (decoded is! Map<String, dynamic>) return null;
 
-      final savedAt = DateTime.fromMillisecondsSinceEpoch(
-        (decoded['savedAt'] as num).toInt(),
+      final entry = (
+        savedAt: DateTime.fromMillisecondsSinceEpoch(
+          (decoded['savedAt'] as num).toInt(),
+        ),
+        value: decoded['value'],
       );
-      if (_isStale(savedAt, maxAge)) return null;
-
-      _memory[key] = (savedAt: savedAt, value: decoded['value']);
-      return decoded['value'];
+      if (remember) _memory[key] = entry;
+      return entry;
     } catch (_) {
       // A cache miss is always an acceptable answer.
       return null;
     }
   }
 
-  Future<void> write(String key, Object? value) async {
+  Future<void> write(String key, Object? value, {bool remember = true}) async {
     final savedAt = DateTime.now();
-    _memory[key] = (savedAt: savedAt, value: value);
+    if (remember) {
+      _memory[key] = (savedAt: savedAt, value: value);
+    } else {
+      _memory.remove(key);
+    }
 
     try {
       final file = await _fileFor(key);
@@ -126,8 +144,18 @@ class JsonCache {
 
 class _NoopJsonCache extends JsonCache {
   @override
-  Future<Object?> read(String key, {Duration? maxAge}) async => null;
+  Future<Object?> read(
+    String key, {
+    Duration? maxAge,
+    bool remember = true,
+  }) async => null;
 
   @override
-  Future<void> write(String key, Object? value) async {}
+  Future<({DateTime savedAt, Object? value})?> readEntry(
+    String key, {
+    bool remember = true,
+  }) async => null;
+
+  @override
+  Future<void> write(String key, Object? value, {bool remember = true}) async {}
 }

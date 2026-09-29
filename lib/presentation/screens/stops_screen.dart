@@ -10,6 +10,7 @@ import '../widgets/edit_favorite_sheet.dart';
 import '../widgets/favorite_stop_card.dart';
 import '../widgets/lab.dart';
 import '../widgets/live_clock.dart';
+import '../widgets/shown_on_screen.dart';
 
 /// Dashboard of favorite stops with their upcoming buses
 class StopsScreen extends ConsumerStatefulWidget {
@@ -19,8 +20,7 @@ class StopsScreen extends ConsumerStatefulWidget {
   ConsumerState<StopsScreen> createState() => _StopsScreenState();
 }
 
-class _StopsScreenState extends ConsumerState<StopsScreen>
-    with WidgetsBindingObserver {
+class _StopsScreenState extends ConsumerState<StopsScreen> with ShownOnScreen {
   /// Held so dispose does not have to reach for ref, which is unsafe
   /// once the widget is being unmounted.
   late final StopsNotifier _notifier;
@@ -28,35 +28,26 @@ class _StopsScreenState extends ConsumerState<StopsScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _notifier = ref.read(stopsProvider.notifier);
-    _start();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _stop();
+    _notifier.stopAutoRefresh(this);
     super.dispose();
   }
 
+  /// No polling the arrivals service in the background, or under another
+  /// screen. In view, the stops the home screen leaves out are asked for
+  /// at once, and anything that changed while away.
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Do not poll the arrivals service while in the background.
-    if (state == AppLifecycleState.resumed) {
-      _start();
+  void shownChanged(bool shown) {
+    if (shown) {
+      _notifier.startAutoRefresh(this);
       _notifier.refreshArrivals();
     } else {
-      _stop();
+      _notifier.stopAutoRefresh(this);
     }
-  }
-
-  void _start() {
-    _notifier.startAutoRefresh();
-  }
-
-  void _stop() {
-    _notifier.stopAutoRefresh();
   }
 
   /// Its own name and the lines it shows
@@ -91,7 +82,7 @@ class _StopsScreenState extends ConsumerState<StopsScreen>
       builder:
           (sheetContext) => Consumer(
             builder: (context, ref, _) {
-              final nearby = ref.watch(stopsAtPointProvider(point));
+              final nearby = ref.watch(nearbyAtPointProvider(point));
 
               return SafeArea(
                 child: nearby.when(

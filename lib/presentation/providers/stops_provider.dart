@@ -5,7 +5,9 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../data/datasources/api_exception.dart';
 import '../../data/repositories/stops_repository_impl.dart';
+import '../../domain/arrival_areas.dart';
 import '../../domain/entities/stop_entity.dart';
+import '../../domain/entities/trip_entity.dart';
 import '../../domain/repositories/stops_repository.dart';
 import 'settings_provider.dart';
 
@@ -59,7 +61,8 @@ class StopsNotifier extends Notifier<StopsState> {
   static const int _maxConcurrentRequests = 4;
 
   /// One request covers every stop within 300 m of the point it asks
-  /// about, so favorites saved from nearly the same place share it.
+  /// about, so favorites saved from nearly the same place share it when
+  /// their stops have no known place.
   static const double _clusterRadiusMetres = 30;
 
   /// Arrivals move slowly enough that answering twice in a few seconds
@@ -73,17 +76,25 @@ class StopsNotifier extends Notifier<StopsState> {
 
   Timer? _timer;
   DateTime? _lastRefresh;
-  bool _autoRefreshing = false;
 
-  /// Set while the home screen drives the refresh: it only asks for the
-  /// stops it lists
-  bool _homeOnly = false;
+  /// Screens following the arrivals while on show, each wanting only the
+  /// stops the home screen lists or all of them
+  final Map<Object, bool> _watchers = {};
+
+  bool get _autoRefreshing => _watchers.isNotEmpty;
+
+  /// Only the home screen is watching: it asks for the stops it lists
+  bool get _homeOnly =>
+      _watchers.isNotEmpty && _watchers.values.every((homeOnly) => homeOnly);
 
   StopsRepository get _repository => ref.read(stopsRepositoryProvider);
 
   @override
   StopsState build() {
-    ref.onDispose(stopAutoRefresh);
+    ref.onDispose(() {
+      _watchers.clear();
+      _timer?.cancel();
+    });
     // Reorder in place when the setting flips (or finishes loading): the
     // arrivals do not change with the order.
     ref.listen(
@@ -196,9 +207,9 @@ class StopsNotifier extends Notifier<StopsState> {
 
   /// Refresh the arrivals of every saved stop.
   ///
-  /// Favorites anchored to nearly the same place are answered by a
-  /// single request; a stop the shared answer does not mention is asked
-  /// for on its own.
+  /// Favorites one request can answer share it, as [_groupFavorites]
+  /// makes them; a stop the shared answer does not mention is asked for
+  /// on its own when that could tell more.
   List<FavoriteStop> get _targets => _homeOnly
       ? state.favorites.where((s) => s.showOnHome).toList(growable: false)
       : state.favorites;
@@ -208,43 +219,50 @@ class StopsNotifier extends Notifier<StopsState> {
     if (state.isRefreshing || targets.isEmpty) return;
 
     final last = _lastRefresh;
+    // Too soon after the last one, unless some stop has nothing to show
+    // yet, such as those the home screen leaves out
     if (!force &&
         last != null &&
-        DateTime.now().difference(last) < _minRefreshGap) {
+        DateTime.now().difference(last) < _minRefreshGap &&
+        targets.every((s) => state.arrivals.containsKey(s.id))) {
       return;
     }
 
     state = state.copyWith(isRefreshing: true, clearError: true);
 
     final results = Map<String, List<BusArrival>>.from(state.arrivals);
-    final clusters = _clusterFavorites(targets);
+    final groups = await _groupFavorites(targets);
     ApiException? failure;
 
     final healed = <String, FavoriteStop>{};
 
-    for (var i = 0; i < clusters.length; i += _maxConcurrentRequests) {
-      final batch = clusters.skip(i).take(_maxConcurrentRequests);
+    for (var i = 0; i < groups.length; i += _maxConcurrentRequests) {
+      final batch = groups.skip(i).take(_maxConcurrentRequests);
       await Future.wait(
-        batch.map((cluster) async {
+        batch.map((group) async {
           try {
             var nearby = await _repository.getNearbyStops(
-              cluster.first.anchorLatitude,
-              cluster.first.anchorLongitude,
+              group.latitude,
+              group.longitude,
             );
 
-            for (final favorite in cluster) {
+            for (final favorite in group.stops) {
               var arrivals = _arrivalsFor(favorite, nearby);
               var seen = nearby;
 
-              // Only worth asking again when the favorite is anchored
-              // somewhere else: the same point gives the same answer.
-              final elsewhere = Geolocator.distanceBetween(
-                    cluster.first.anchorLatitude,
-                    cluster.first.anchorLongitude,
-                    favorite.anchorLatitude,
-                    favorite.anchorLongitude,
-                  ) >
-                  1;
+              // A placed stop within reach that the answer leaves out has
+              // no bus coming. One asked about around an anchor is worth
+              // asking again only when anchored somewhere else: the same
+              // point gives the same answer.
+              final elsewhere =
+                  !group.placed &&
+                  Geolocator.distanceBetween(
+                        group.latitude,
+                        group.longitude,
+                        favorite.anchorLatitude,
+                        favorite.anchorLongitude,
+                      ) >
+                      1;
 
               if (arrivals == null && elsewhere) {
                 seen = await _repository.getNearbyStops(
@@ -372,8 +390,66 @@ class StopsNotifier extends Notifier<StopsState> {
     await loadFavorites();
   }
 
-  /// Group favorites that a single request can answer together
-  List<List<FavoriteStop>> _clusterFavorites(List<FavoriteStop> stops) {
+  /// Group favorites that a single request can answer together.
+  ///
+  /// A stop whose place is known can be asked about from anywhere within
+  /// reach of it, so those share requests the way the stops of a trip do.
+  /// An area, or a stop never placed, is asked about around its anchor,
+  /// with the others saved from nearly the same spot.
+  Future<List<_Group>> _groupFavorites(List<FavoriteStop> stops) async {
+    final positions = await _repository.stopPositions([
+      for (final stop in stops)
+        if (stop.stopId case final id?) id,
+    ]);
+    final placed = [
+      for (final stop in stops)
+        if (positions[stop.stopId] case final at?) (stop: stop, at: at),
+    ];
+
+    final groups = <_Group>[];
+    final grouped = <String>{};
+    final centres = areasCovering([
+      for (final p in placed) p.at,
+    ], arrivalsReachMeters);
+    for (final centre in centres) {
+      final within = [
+        for (final p in placed)
+          if (!grouped.contains(p.stop.id) &&
+              metersBetween(
+                    centre.latitude,
+                    centre.longitude,
+                    p.at.latitude,
+                    p.at.longitude,
+                  ) <=
+                  arrivalsReachMeters)
+            p.stop,
+      ];
+      grouped.addAll(within.map((s) => s.id));
+      groups.add((
+        latitude: centre.latitude,
+        longitude: centre.longitude,
+        stops: within,
+        placed: true,
+      ));
+    }
+
+    final rest = [
+      for (final stop in stops)
+        if (!grouped.contains(stop.id)) stop,
+    ];
+    for (final cluster in _clusterByAnchor(rest)) {
+      groups.add((
+        latitude: cluster.first.anchorLatitude,
+        longitude: cluster.first.anchorLongitude,
+        stops: cluster,
+        placed: false,
+      ));
+    }
+    return groups;
+  }
+
+  /// Group favorites saved from nearly the same spot
+  List<List<FavoriteStop>> _clusterByAnchor(List<FavoriteStop> stops) {
     final clusters = <List<FavoriteStop>>[];
 
     for (final stop in stops) {
@@ -522,24 +598,35 @@ class StopsNotifier extends Notifier<StopsState> {
     );
   }
 
-  /// Refresh arrivals while the dashboard is on screen, at the pace
-  /// [nextRefreshDelay] sets.
+  /// Refresh arrivals while [watcher], a screen listing them, is on show,
+  /// at the pace [nextRefreshDelay] sets.
   ///
-  /// [homeOnly] limits the requests to the stops the home screen lists.
-  void startAutoRefresh({bool homeOnly = false}) {
-    _homeOnly = homeOnly;
-    _autoRefreshing = true;
+  /// [homeOnly] is the home screen, which lists only some stops; as long
+  /// as another screen watches too, every stop is asked for.
+  void startAutoRefresh(Object watcher, {bool homeOnly = false}) {
+    _watchers[watcher] = homeOnly;
     _scheduleNext();
   }
 
-  void stopAutoRefresh() {
-    _autoRefreshing = false;
+  /// [watcher] went out of sight; the refresh stops with the last one
+  void stopAutoRefresh(Object watcher) {
+    _watchers.remove(watcher);
+    if (_watchers.isNotEmpty) return;
     _timer?.cancel();
     _timer = null;
   }
 
   void clearError() => state = state.copyWith(clearError: true);
 }
+
+/// Favorites one request answers, and the point it asks around; a group
+/// of [placed] stops asks around a point within reach of each of them
+typedef _Group = ({
+  double latitude,
+  double longitude,
+  List<FavoriteStop> stops,
+  bool placed,
+});
 
 /// Provider for the favorite stops dashboard
 final stopsProvider = NotifierProvider<StopsNotifier, StopsState>(() {
@@ -582,6 +669,16 @@ Future<Position> currentDevicePosition({bool requestPermission = true}) async {
   );
 }
 
+/// Where the device was last placed, instantly and without GPS; null
+/// when unknown or without the permission already given
+Future<Position?> lastKnownDevicePosition() async {
+  try {
+    return await Geolocator.getLastKnownPosition();
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Stops around the user, with the position they were found from
 typedef NearbyResult = ({List<NearbyStop> stops, double lat, double lon});
 
@@ -617,6 +714,15 @@ final stopsAtPointProvider =
         .locatedStops(point.latitude, point.longitude);
   },
 );
+
+/// Stops around a point from a single request, placed where their place
+/// is already known: for lists, which need no map to put them on
+final nearbyAtPointProvider =
+    FutureProvider.autoDispose.family<List<NearbyStop>, MapPoint>((ref, point) {
+  return ref
+      .read(stopsRepositoryProvider)
+      .getNearbyStops(point.latitude, point.longitude);
+});
 
 /// Fresh arrivals for a stop being looked at, from a single request.
 ///

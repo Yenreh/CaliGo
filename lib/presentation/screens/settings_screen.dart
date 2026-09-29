@@ -215,15 +215,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // Map section
           _SectionHeader(title: l10n.mapTab),
           _SettingsCard(
-            child: ListTile(
-              leading: const Icon(Icons.map_outlined),
-              title: Text(l10n.darkMap),
-              subtitle: Text(l10n.darkMapDesc),
-              trailing: LabSwitch(
-                value: settings.darkMap,
-                onChanged: settingsNotifier.setDarkMap,
-              ),
-              onTap: () => settingsNotifier.setDarkMap(!settings.darkMap),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.map_outlined),
+                  title: Text(l10n.darkMap),
+                  subtitle: Text(l10n.darkMapDesc),
+                  trailing: LabSwitch(
+                    value: settings.darkMap,
+                    onChanged: settingsNotifier.setDarkMap,
+                  ),
+                  onTap: () => settingsNotifier.setDarkMap(!settings.darkMap),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.hd_outlined),
+                  title: Text(l10n.sharpMap),
+                  subtitle: Text(l10n.sharpMapDesc),
+                  trailing: LabSwitch(
+                    value: settings.sharpMap,
+                    onChanged: settingsNotifier.setSharpMap,
+                  ),
+                  onTap:
+                      () => settingsNotifier.setSharpMap(!settings.sharpMap),
+                ),
+              ],
             ),
           ),
 

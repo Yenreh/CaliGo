@@ -920,6 +920,18 @@ abstract class AppLocalizations {
   /// **'Dark tiles on the stops map, whatever the app theme'**
   String get darkMapDesc;
 
+  /// No description provided for @sharpMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharp map'**
+  String get sharpMap;
+
+  /// No description provided for @sharpMapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Maps at the screen\'s full resolution. Off, they use less mobile data and look a little softer'**
+  String get sharpMapDesc;
+
   /// No description provided for @findStops.
   ///
   /// In en, this message translates to:
@@ -1087,6 +1099,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cards'**
   String get cardsShort;
+
+  /// No description provided for @planTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a trip'**
+  String get planTrip;
+
+  /// No description provided for @chooseOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Where from?'**
+  String get chooseOrigin;
+
+  /// No description provided for @chooseDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to?'**
+  String get chooseDestination;
+
+  /// No description provided for @swapPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap origin and destination'**
+  String get swapPlaces;
+
+  /// No description provided for @pickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on the map'**
+  String get pickOnMap;
+
+  /// No description provided for @usePoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this point'**
+  String get usePoint;
+
+  /// No description provided for @pointOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Point on the map'**
+  String get pointOnMap;
+
+  /// No description provided for @nearStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Near {stop}'**
+  String nearStop(String stop);
+
+  /// No description provided for @searchPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Search a station or stop'**
+  String get searchPlace;
+
+  /// No description provided for @stopsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops'**
+  String get stopsSection;
+
+  /// No description provided for @loadingRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading MIO routes ({done}/{total})'**
+  String loadingRoutes(int done, int total);
+
+  /// No description provided for @planHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where you leave from and where you are going to see how to get there.'**
+  String get planHint;
+
+  /// No description provided for @noTripFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No MIO trip found between these two places at this time.'**
+  String get noTripFound;
+
+  /// No description provided for @tripEstimateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Live times from MIO. Anything marked ~ is approximate: no bus on its way confirms it, so the line\'s usual figures are used.'**
+  String get tripEstimateNote;
+
+  /// No description provided for @arriveAround.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrive ~{time}'**
+  String arriveAround(String time);
+
+  /// No description provided for @transfersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Direct} =1{1 transfer} other{{count} transfers}}'**
+  String transfersCount(int count);
+
+  /// No description provided for @walkDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{meters} m on foot'**
+  String walkDistance(int meters);
+
+  /// No description provided for @nextBusNow.
+  ///
+  /// In en, this message translates to:
+  /// **'{line} arriving'**
+  String nextBusNow(String line);
+
+  /// No description provided for @stepWalkTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk {minutes} min to {stop}'**
+  String stepWalkTo(int minutes, String stop);
+
+  /// No description provided for @stepWalkToDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk {minutes} min to your destination'**
+  String stepWalkToDestination(int minutes);
+
+  /// No description provided for @stepRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Take {lines} towards {towards}'**
+  String stepRide(String lines, String towards);
+
+  /// No description provided for @stepGetOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Get off at {stop}'**
+  String stepGetOff(String stop);
+
+  /// No description provided for @couldNotLocate.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your location'**
+  String get couldNotLocate;
+
+  /// No description provided for @openInGoogleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this search in Google Maps'**
+  String get openInGoogleMaps;
+
+  /// No description provided for @goHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Go here'**
+  String get goHere;
+
+  /// No description provided for @updateLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Update my location'**
+  String get updateLocation;
+
+  /// No description provided for @lineChoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Any of these lines will do; tap one to see its route'**
+  String get lineChoiceHint;
+
+  /// No description provided for @refreshTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Update times'**
+  String get refreshTimes;
+
+  /// No description provided for @liveUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No live MIO data for some stretches: those times are approximate.'**
+  String get liveUnavailable;
+
+  /// No description provided for @arriveAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrive {time}'**
+  String arriveAt(String time);
+
+  /// No description provided for @busLeavesAt.
+  ///
+  /// In en, this message translates to:
+  /// **'{line} at {time} (in {minutes} min)'**
+  String busLeavesAt(String line, String time, int minutes);
+
+  /// No description provided for @noLiveBus.
+  ///
+  /// In en, this message translates to:
+  /// **'No live bus · about {minutes} min wait'**
+  String noLiveBus(int minutes);
+
+  /// No description provided for @leavesAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves {time}'**
+  String leavesAt(String time);
+
+  /// No description provided for @waitAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait ~{minutes} min'**
+  String waitAbout(int minutes);
+
+  /// No description provided for @stopsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{stops, plural, =1{1 stop} other{{stops} stops}}'**
+  String stopsCount(int stops);
 }
 
 class _AppLocalizationsDelegate

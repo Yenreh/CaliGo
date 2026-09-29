@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/stop_entity.dart';
+import '../../domain/entities/trip_entity.dart';
 import '../../l10n/app_localizations.dart';
 import '../providers/stops_provider.dart';
+import '../screens/plan_trip_screen.dart';
 import 'favorite_stop_card.dart';
 import 'lab.dart';
 import 'live_clock.dart';
@@ -220,6 +222,31 @@ class _StopDetailsSheetState extends ConsumerState<StopDetailsSheet> {
                             ),
               ),
               const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // The stop itself when placed; where it was found
+                    // from, a few metres off, otherwise
+                    final destination = TripPlace(
+                      latitude: stop.latitude ?? widget.anchorLatitude,
+                      longitude: stop.longitude ?? widget.anchorLongitude,
+                      name: stop.name,
+                    );
+                    final navigator = Navigator.of(context);
+                    navigator.pop();
+                    navigator.push(
+                      MaterialPageRoute<void>(
+                        builder:
+                            (_) => PlanTripScreen(destination: destination),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.directions_outlined),
+                  label: Text(l10n.goHere),
+                ),
+              ),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(

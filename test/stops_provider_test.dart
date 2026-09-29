@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:caligo/domain/arrival_areas.dart';
 import 'package:caligo/domain/entities/line_entity.dart';
 import 'package:caligo/domain/entities/stop_entity.dart';
 import 'package:caligo/domain/repositories/stops_repository.dart';
+import 'package:caligo/domain/trip_timing.dart';
 import 'package:caligo/presentation/providers/stops_provider.dart';
 
 /// Repository that records how the arrivals were asked for
@@ -10,10 +12,18 @@ class _FakeStopsRepository implements StopsRepository {
   final List<FavoriteStop> favorites;
   final List<NearbyStop> nearby;
 
+  /// Where the stops stand, for those whose place is known
+  final Map<String, GeoPoint> positions;
+
   int nearbyCalls = 0;
+  final List<GeoPoint> askedAround = [];
   final List<FavoriteStop> saved = [];
 
-  _FakeStopsRepository({required this.favorites, required this.nearby});
+  _FakeStopsRepository({
+    required this.favorites,
+    required this.nearby,
+    this.positions = const {},
+  });
 
   @override
   Future<List<FavoriteStop>> getFavorites() async => favorites;
@@ -21,8 +31,21 @@ class _FakeStopsRepository implements StopsRepository {
   @override
   Future<List<NearbyStop>> getNearbyStops(double lat, double lon) async {
     nearbyCalls++;
+    askedAround.add((latitude: lat, longitude: lon));
     return nearby;
   }
+
+  @override
+  Future<Map<String, GeoPoint>> stopPositions(Iterable<String> ids) async => {
+    for (final id in ids)
+      if (positions[id] case final at?) id: at,
+  };
+
+  @override
+  Future<void> observeRides(Map<String, double> readings) async {}
+
+  @override
+  Future<Map<String, double>> rideFactors() async => const {};
 
   @override
   Future<void> addFavorite(FavoriteStop stop) async {}
@@ -53,6 +76,20 @@ class _FakeStopsRepository implements StopsRepository {
 
   @override
   Future<List<LineStop>> getLineStops(String line) async => const [];
+
+  @override
+  Future<LiveArrivals> arrivalsFor(
+    List<LineStop> stops, {
+    Duration maxAge = const Duration(minutes: 1),
+  }) async => LiveArrivals.none;
+
+  @override
+  Future<Map<String, Duration>> lineHeadways(DateTime at) async => const {};
+
+  @override
+  Future<Map<String, List<LineStop>>> getAllLineStops({
+    void Function(int done, int total)? onProgress,
+  }) async => const {};
 
   @override
   Future<List<LineBus>> getLineBuses(String line) async => const [];
@@ -134,13 +171,161 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = await _readyNotifier(container);
-      notifier.startAutoRefresh(homeOnly: true);
-      addTearDown(notifier.stopAutoRefresh);
+      final home = Object();
+      notifier.startAutoRefresh(home, homeOnly: true);
+      addTearDown(() => notifier.stopAutoRefresh(home));
       repository.nearbyCalls = 0;
       await notifier.refreshArrivals(force: true);
 
       // The two stops are too far apart to share a request.
       expect(repository.nearbyCalls, 1);
+    });
+
+    test('asks for every stop while any screen watching wants them all',
+        () async {
+      final repository = _FakeStopsRepository(
+        favorites: [
+          _favorite('shown', 3.4516, -76.5320),
+          _favorite('hidden', 3.4700, -76.5320).copyWith(showOnHome: false),
+        ],
+        nearby: [_stop('shown'), _stop('hidden')],
+      );
+      final container = ProviderContainer(
+        overrides: [stopsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = await _readyNotifier(container);
+      final home = Object();
+      final stops = Object();
+      notifier.startAutoRefresh(home, homeOnly: true);
+      notifier.startAutoRefresh(stops);
+      addTearDown(() => notifier.stopAutoRefresh(home));
+      repository.nearbyCalls = 0;
+      await notifier.refreshArrivals(force: true);
+      expect(repository.nearbyCalls, 2);
+
+      // The stops screen closed: the home screen is left, with its stops
+      notifier.stopAutoRefresh(stops);
+      repository.nearbyCalls = 0;
+      await notifier.refreshArrivals(force: true);
+      expect(repository.nearbyCalls, 1);
+    });
+
+    test('asks again too soon only for the stops with nothing to show',
+        () async {
+      final repository = _FakeStopsRepository(
+        favorites: [
+          _favorite('shown', 3.4516, -76.5320),
+          _favorite('hidden', 3.4700, -76.5320).copyWith(showOnHome: false),
+        ],
+        nearby: [_stop('shown'), _stop('hidden')],
+      );
+      final container = ProviderContainer(
+        overrides: [stopsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      // The home screen watches from the start, so only its stop loads
+      final notifier = container.read(stopsProvider.notifier);
+      final home = Object();
+      final stops = Object();
+      notifier.startAutoRefresh(home, homeOnly: true);
+      addTearDown(() => notifier.stopAutoRefresh(home));
+      await Future<void>.delayed(Duration.zero);
+      await notifier.loadFavorites();
+      expect(container.read(stopsProvider).arrivals.keys, ['shown']);
+
+      // The stops screen opens right after: its extra stop has nothing yet
+      notifier.startAutoRefresh(stops);
+      addTearDown(() => notifier.stopAutoRefresh(stops));
+      repository.nearbyCalls = 0;
+      await notifier.refreshArrivals();
+      expect(repository.nearbyCalls, 2);
+
+      // Everything shows something now: too soon to ask again
+      await notifier.refreshArrivals();
+      expect(repository.nearbyCalls, 2);
+    });
+
+    test('placed stops share a request when one point reaches both',
+        () async {
+      // Saved from two points 400 m apart, about 220 m from each other
+      final repository = _FakeStopsRepository(
+        favorites: [
+          _favorite('a', 3.4516, -76.5320),
+          _favorite('b', 3.4552, -76.5320),
+        ],
+        nearby: [_stop('a'), _stop('b')],
+        positions: {
+          'a': (latitude: 3.4525, longitude: -76.5320),
+          'b': (latitude: 3.4545, longitude: -76.5320),
+        },
+      );
+      final container = ProviderContainer(
+        overrides: [stopsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = await _readyNotifier(container);
+      repository.nearbyCalls = 0;
+      await notifier.refreshArrivals(force: true);
+
+      expect(repository.nearbyCalls, 1);
+    });
+
+    test('a placed stop the shared answer leaves out has no bus coming',
+        () async {
+      final repository = _FakeStopsRepository(
+        favorites: [
+          _favorite('a', 3.4516, -76.5320),
+          _favorite('quiet', 3.4540, -76.5320),
+        ],
+        nearby: [_stop('a')],
+        positions: {
+          'a': (latitude: 3.4520, longitude: -76.5320),
+          'quiet': (latitude: 3.4530, longitude: -76.5320),
+        },
+      );
+      final container = ProviderContainer(
+        overrides: [stopsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = await _readyNotifier(container);
+      repository.nearbyCalls = 0;
+      await notifier.refreshArrivals(force: true);
+
+      // Within reach of the point asked around: no second request
+      expect(repository.nearbyCalls, 1);
+      expect(container.read(stopsProvider).arrivals['quiet'], isEmpty);
+    });
+
+    test('an area is still asked about around its own anchor', () async {
+      final repository = _FakeStopsRepository(
+        favorites: [
+          const FavoriteStop(
+            id: 'station-1',
+            name: 'Station',
+            anchorLatitude: 3.4516,
+            anchorLongitude: -76.5320,
+          ),
+        ],
+        nearby: [_stop('a')],
+        positions: {'a': (latitude: 3.4600, longitude: -76.5320)},
+      );
+      final container = ProviderContainer(
+        overrides: [stopsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = await _readyNotifier(container);
+      repository.askedAround.clear();
+      await notifier.refreshArrivals(force: true);
+
+      expect(repository.askedAround, [
+        (latitude: 3.4516, longitude: -76.5320),
+      ]);
     });
 
     test('asks again only when the stop is anchored somewhere else', () async {

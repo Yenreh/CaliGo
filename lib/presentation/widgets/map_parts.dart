@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/retry.dart';
 import 'package:latlong2/latlong.dart' show pi;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,17 +28,33 @@ const String cartoKey = String.fromEnvironment('CARTO_KEY');
 LabPalette tilesPalette({required bool dark}) =>
     dark ? LabPalette.dark : LabPalette.light;
 
+/// One client for the tiles of every map, open for the whole run. Each
+/// build makes a new tile layer, and a provider left to make its own
+/// client would open new connections to the tile server every time.
+final http.Client _tileClient = RetryClient(http.Client());
+
+/// Tiles from the network, through the shared client and the disk cache
+TileProvider _tileProvider() => NetworkTileProvider(
+  httpClient: _tileClient,
+  cachingProvider: MapTileCache.provider,
+);
+
 /// Voyager's cream paper sits close to the light theme; Dark Matter
 /// is the dark one, only when the settings ask for it. OpenStreetMap
-/// only has light tiles, so those are inverted instead.
-Widget mapTileLayer(BuildContext context, {required bool dark}) {
+/// only has light tiles, so those are inverted instead. [sharp] asks for
+/// tiles at the screen's full resolution, two to three times the data.
+Widget mapTileLayer(
+  BuildContext context, {
+  required bool dark,
+  bool sharp = true,
+}) {
   const key = cartoKey;
   if (key.isEmpty) {
     return TileLayer(
       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       userAgentPackageName: AppInfo.packageId,
       panBuffer: 0,
-      tileProvider: NetworkTileProvider(cachingProvider: MapTileCache.provider),
+      tileProvider: _tileProvider(),
       tileBuilder: dark ? darkModeTileBuilder : null,
     );
   }
@@ -48,12 +66,12 @@ Widget mapTileLayer(BuildContext context, {required bool dark}) {
     urlTemplate:
         'https://basemaps.cartocdn.com/rastertiles/'
         '$style/{z}/{x}/{y}{r}.png?key=$key',
-    retinaMode: RetinaMode.isHighDensity(context),
+    retinaMode: sharp && RetinaMode.isHighDensity(context),
     userAgentPackageName: AppInfo.packageId,
     // Only what is on screen: the default ring of hidden tiles around
     // it roughly triples what a first look downloads
     panBuffer: 0,
-    tileProvider: NetworkTileProvider(cachingProvider: MapTileCache.provider),
+    tileProvider: _tileProvider(),
   );
 }
 

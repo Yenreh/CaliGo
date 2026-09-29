@@ -223,6 +223,7 @@ class _MapStopsScreenState extends ConsumerState<MapStopsScreen> {
   Widget build(BuildContext context) {
     final p = LabPalette.of(context);
     final isDark = ref.watch(settingsProvider.select((s) => s.darkMap));
+    final sharp = ref.watch(settingsProvider.select((s) => s.sharpMap));
     final tiles = tilesPalette(dark: isDark);
     final l10n = AppLocalizations.of(context)!;
     final point = _searched;
@@ -252,7 +253,7 @@ class _MapStopsScreenState extends ConsumerState<MapStopsScreen> {
                     onMapReady: () => _mapReady = true,
                   ),
                   children: [
-                    mapTileLayer(context, dark: isDark),
+                    mapTileLayer(context, dark: isDark, sharp: sharp),
                     MarkerLayer(markers: _markers(context, results)),
                   ],
                 ),

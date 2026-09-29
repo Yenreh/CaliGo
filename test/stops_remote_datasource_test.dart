@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:caligo/data/datasources/api_exception.dart';
+import 'package:caligo/data/datasources/headway_memory.dart';
 import 'package:caligo/data/datasources/json_cache.dart';
+import 'package:caligo/data/datasources/ride_time_memory.dart';
 import 'package:caligo/data/datasources/service_guard.dart';
 import 'package:caligo/data/datasources/stops_remote_datasource.dart';
 import 'package:caligo/domain/entities/line_entity.dart';
@@ -501,4 +504,339 @@ void main() {
       expect(late.runsAt(DateTime(2026, 9, 28, 2, 0)), isFalse);
     });
   });
+
+  group('Arrivals for a trip', () {
+    LineStop stop(String id, double lat, double lon) => LineStop(
+      stopId: id,
+      name: id,
+      latitude: lat,
+      longitude: lon,
+      direction: 0,
+      sequence: 1,
+    );
+
+    test('asks once for stops close together, then reuses it', () async {
+      var requests = 0;
+      final client = MockClient((request) async {
+        requests++;
+        return http.Response(_arrivalsBody, 200);
+      });
+      final datasource = _datasource(client);
+      // About 100 m apart, and a third one 2 km away
+      final stops = [
+        stop('500800', 3.4516, -76.5320),
+        stop('500751', 3.4525, -76.5320),
+        stop('far', 3.4700, -76.5320),
+      ];
+
+      final first = await datasource.arrivalsFor(stops);
+      expect(requests, 2);
+      expect(first.stops.map((s) => s.id), contains('500800'));
+
+      await datasource.arrivalsFor(stops.take(2).toList());
+      expect(requests, 2);
+
+      await datasource.arrivalsFor(
+        stops.take(2).toList(),
+        maxAge: Duration.zero,
+      );
+      expect(requests, 3);
+    });
+
+    test('says so when an area cannot be asked about', () async {
+      final client = MockClient((request) async => http.Response('', 500));
+      final live = await _datasource(
+        client,
+      ).arrivalsFor([stop('500800', 3.4516, -76.5320)]);
+
+      expect(live.stops, isEmpty);
+      expect(live.failed, isTrue);
+    });
+
+    test('asks once between two stops too far apart to answer for each other',
+        () async {
+      final asked = <(double, double)>[];
+      final client = MockClient((request) async {
+        asked.add((
+          double.parse(request.url.queryParameters['latitud']!),
+          double.parse(request.url.queryParameters['longitud']!),
+        ));
+        return http.Response('[]', 200);
+      });
+
+      // About 450 m apart: each is out of the other's reach, not the middle's
+      await _datasource(client).arrivalsFor([
+        stop('a', 3.4500, -76.5320),
+        stop('b', 3.4540, -76.5320),
+      ]);
+
+      expect(asked, hasLength(1));
+      expect(asked.single.$1, closeTo(3.4520, 1e-9));
+    });
+
+    test('learns how often each line comes from the arrivals seen', () async {
+      final memory = HeadwayMemory(JsonCache.noop());
+      final now = DateTime(2026, 9, 29, 8, 15);
+      BusArrival bus(int minutes) => BusArrival(
+        line: 'T50',
+        destination: 'Andres Sanin',
+        arrivalTime: now.add(Duration(minutes: minutes)),
+        vehicleId: 'v$minutes',
+      );
+
+      await memory.observe([
+        NearbyStop(
+          id: 's',
+          name: 'Aguablanca B4',
+          distanceMeters: 0,
+          arrivals: [bus(1), bus(10), bus(19), bus(28)],
+        ),
+      ], now);
+
+      expect((await memory.at(now))['T50'], const Duration(minutes: 9));
+      // An hour later still counts; a quiet night hour does not
+      expect((await memory.at(now.add(const Duration(hours: 1))))['T50'],
+          const Duration(minutes: 9));
+      expect((await memory.at(now.add(const Duration(hours: 12))))['T50'],
+          isNull);
+    });
+  });
+
+  group('Catalog kept offline', () {
+    test('an old copy answers when the catalog cannot be reached', () async {
+      final cache = _OldCache({
+        'lines_hours': [
+          {'line': 'A12A', 'startTime': '04:23:00', 'endTime': '00:19:00'},
+        ],
+      });
+      final client = MockClient(
+        (_) async => throw http.ClientException('Network is unreachable'),
+      );
+
+      final hours = await _datasource(client, cache: cache).getLineHours();
+
+      expect(hours.keys, ['A12A']);
+    });
+
+    test('an old route answers at once, and a new one comes behind it',
+        () async {
+      String route(String name) =>
+          '[{"orientation":"0","stopSequence":1,"stopId":"1",'
+          '"stopNam":"$name","longitude":-76.53,"latitude":3.45}]';
+      final cache = _OldCache({'linestops_A47': jsonDecode(route('Old'))});
+      var requests = 0;
+      final client = MockClient((_) async {
+        requests++;
+        return http.Response(route('New'), 200);
+      });
+      final datasource = _datasource(client, cache: cache);
+
+      final stops = await datasource.getLineStops('A47', staleOk: true);
+      expect(stops.single.name, 'Old');
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(requests, 1);
+      expect((await datasource.getLineStops('A47')).single.name, 'New');
+      expect(requests, 1);
+    });
+  });
+
+  test('places the stops from the routes, asking around no further',
+      () async {
+    var arrivalsRequests = 0;
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/linestops/E21')) {
+        return http.Response(
+          '[{"orientation":"0","stopSequence":1,"stopId":"500800",'
+          '"stopNam":"Plaza de Cayzedo A1","longitude":-76.5331,'
+          '"latitude":3.4513},'
+          '{"orientation":"0","stopSequence":2,"stopId":"500751",'
+          '"stopNam":"La Ermita A2","longitude":-76.5310,"latitude":3.4531}]',
+          200,
+        );
+      }
+      arrivalsRequests++;
+      return http.Response(_arrivalsBody, 200);
+    });
+    final datasource = _datasource(client);
+    await datasource.getLineStops('E21');
+
+    final stops = await datasource.getLocatedStops(
+      latitude: 3.4516,
+      longitude: -76.532,
+    );
+
+    expect(arrivalsRequests, 1);
+    expect(stops.first.latitude, 3.4513);
+    expect(stops.last.longitude, -76.5310);
+  });
+
+  test('adds a line the catalog leaves out once it is seen running',
+      () async {
+    final client = MockClient((request) async {
+      final path = request.url.path;
+      if (path.endsWith('/lines')) {
+        return http.Response('[{"lineId":131,"name":"T31"}]', 200);
+      }
+      if (path.endsWith('/linesOperation')) {
+        return http.Response(
+          '[{"line":"T31","startTime":"04:30:00","endTime":"23:00:00"},'
+          '{"line":"A52","startTime":"05:00:00","endTime":"20:09:00"},'
+          '{"line":"E51","startTime":"05:00:00","endTime":"20:55:00"}]',
+          200,
+        );
+      }
+      return http.Response(
+        '[{"idParada":"1","nombreParada":"Stop","distanciaMetros":10,'
+        '"buses":[{"nombreLinea":"A52","nombreDestino":"Terminal",'
+        '"tiempoEstimadoDeSalida":1787429222000,"vehiculoId":"9"}]}]',
+        200,
+      );
+    });
+    final datasource = _datasource(client);
+
+    expect((await datasource.getLines()).map((l) => l.name), ['T31']);
+
+    await datasource.getNearbyStops(latitude: 3.45, longitude: -76.53);
+    // The arrivals teach what they show in the background
+    await Future<void>.delayed(Duration.zero);
+
+    // E51 has hours too, but nothing shows it running
+    expect(
+      (await datasource.getLines()).map((l) => l.name),
+      ['A52', 'T31'],
+    );
+  });
+
+  test('asks a bus its direction again only as it nears its trip end',
+      () async {
+    var clock = DateTime(2026, 9, 29, 12);
+    final asked = <String>[];
+    final client = MockClient((request) async {
+      final path = request.url.path;
+      if (path.endsWith('/linestops/A47')) {
+        // One direction, north from 3.40 to its last stop at 3.44
+        return http.Response(
+          '[{"orientation":"0","stopSequence":1,"stopId":"s",'
+          '"stopNam":"Start","longitude":-76.53,"latitude":3.40},'
+          '{"orientation":"0","stopSequence":2,"stopId":"e",'
+          '"stopNam":"End","longitude":-76.53,"latitude":3.44}]',
+          200,
+        );
+      }
+      if (path.endsWith('/operations/A47')) {
+        // Bus 1 is 200 m from the last stop, bus 2 four kilometres
+        return http.Response(
+          '[{"busNumber":1,"gpsx":-7.653E8,"gpsy":3.4382E7},'
+          '{"busNumber":2,"gpsx":-7.653E8,"gpsy":3.40E7}]',
+          200,
+        );
+      }
+      if (path.contains('/busInfo/')) {
+        final bus = path.split('/').last;
+        asked.add(bus);
+        return http.Response(
+          '[{"busNumber":$bus,"line":"A47","orientation":"0"}]',
+          200,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+    final datasource = StopsRemoteDatasource(
+      client: client,
+      backoff: Duration.zero,
+      cache: JsonCache.noop(),
+      now: () => clock,
+    );
+
+    await datasource.getLineBuses('A47');
+    expect(asked, unorderedEquals(['1', '2']));
+
+    clock = clock.add(const Duration(minutes: 3));
+    asked.clear();
+    await datasource.getLineBuses('A47');
+    expect(asked, ['1']);
+
+    clock = clock.add(const Duration(minutes: 43));
+    asked.clear();
+    await datasource.getLineBuses('A47');
+    expect(asked, unorderedEquals(['1', '2']));
+  });
+
+  group('Learned per line', () {
+    test('a line seen coming is known for a while', () async {
+      final memory = HeadwayMemory(JsonCache.noop());
+      final now = DateTime(2026, 9, 29, 8);
+
+      await memory.observe([
+        NearbyStop(
+          id: 's',
+          name: 'Stop',
+          distanceMeters: 0,
+          arrivals: [
+            BusArrival(
+              line: 'A52',
+              destination: 'Terminal',
+              arrivalTime: now,
+              vehicleId: '1',
+            ),
+          ],
+        ),
+      ], now);
+
+      expect(
+        await memory.seenSince(now.subtract(const Duration(days: 14))),
+        {'A52'},
+      );
+      expect(await memory.seenSince(now.add(const Duration(days: 1))), isEmpty);
+    });
+
+    test('a ride factor moves a share of the way to each reading', () async {
+      final memory = RideTimeMemory(JsonCache.noop());
+
+      await memory.observe({'T31': 1.5, 'A12A': 3.0});
+      final factors = await memory.factors();
+
+      expect(factors['T31'], closeTo(1.1, 1e-9));
+      // Three times the estimate is a bus held at a terminal, not the line
+      expect(factors.containsKey('A12A'), isFalse);
+    });
+
+    test('the same ride read again settles on its reading', () async {
+      final memory = RideTimeMemory(JsonCache.noop());
+
+      for (var i = 0; i < 30; i++) {
+        await memory.observe({'T31': 1.5});
+      }
+
+      expect((await memory.factors())['T31'], closeTo(1.5, 0.01));
+      expect((await memory.factors())['T31'], lessThanOrEqualTo(1.5));
+    });
+  });
+}
+
+/// Cache holding copies saved long ago, as a week offline leaves them
+class _OldCache extends JsonCache {
+  final Map<String, Object?> old;
+  final Map<String, Object?> written = {};
+
+  _OldCache(this.old);
+
+  @override
+  Future<({DateTime savedAt, Object? value})?> readEntry(
+    String key, {
+    bool remember = true,
+  }) async {
+    if (written.containsKey(key)) {
+      return (savedAt: DateTime.now(), value: written[key]);
+    }
+    if (old.containsKey(key)) {
+      return (savedAt: DateTime(2020), value: old[key]);
+    }
+    return null;
+  }
+
+  @override
+  Future<void> write(String key, Object? value, {bool remember = true}) async =>
+      written[key] = value;
 }

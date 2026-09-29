@@ -20,7 +20,8 @@ class StationStopsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final point = (latitude: station.latitude, longitude: station.longitude);
-    final stops = ref.watch(stopsAtPointProvider(point));
+    // A list with no map: the stops need no placing beyond what is known
+    final stops = ref.watch(nearbyAtPointProvider(point));
 
     return Scaffold(
       appBar: AppBar(

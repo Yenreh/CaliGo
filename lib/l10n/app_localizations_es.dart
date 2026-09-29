@@ -465,6 +465,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mapa de paradas con fondo oscuro, sin importar el tema de la app';
 
   @override
+  String get sharpMap => 'Mapa nítido';
+
+  @override
+  String get sharpMapDesc =>
+      'Mapas a la resolución completa de la pantalla. Apagado, gastan menos datos móviles y se ven un poco menos definidos';
+
+  @override
   String get findStops => 'Buscar paradas';
 
   @override
@@ -571,4 +578,159 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get cardsShort => 'Tarjetas';
+
+  @override
+  String get planTrip => 'Planear viaje';
+
+  @override
+  String get chooseOrigin => '¿De dónde sales?';
+
+  @override
+  String get chooseDestination => '¿A dónde vas?';
+
+  @override
+  String get swapPlaces => 'Intercambiar origen y destino';
+
+  @override
+  String get pickOnMap => 'Elegir en el mapa';
+
+  @override
+  String get usePoint => 'Usar este punto';
+
+  @override
+  String get pointOnMap => 'Punto en el mapa';
+
+  @override
+  String nearStop(String stop) {
+    return 'Cerca de $stop';
+  }
+
+  @override
+  String get searchPlace => 'Busca una estación o parada';
+
+  @override
+  String get stopsSection => 'Paradas';
+
+  @override
+  String loadingRoutes(int done, int total) {
+    return 'Cargando las rutas del MIO ($done/$total)';
+  }
+
+  @override
+  String get planHint =>
+      'Elige de dónde sales y a dónde vas para ver cómo llegar.';
+
+  @override
+  String get noTripFound =>
+      'No encontramos cómo llegar en MIO entre estos dos puntos a esta hora.';
+
+  @override
+  String get tripEstimateNote =>
+      'Horas en vivo de MIO. Lo marcado con ~ es aproximado: no hay un bus en camino que lo confirme, así que se usa lo que suele tardar esa ruta.';
+
+  @override
+  String arriveAround(String time) {
+    return 'Llegas ~$time';
+  }
+
+  @override
+  String transfersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transbordos',
+      one: '1 transbordo',
+      zero: 'Directo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String walkDistance(int meters) {
+    return '$meters m a pie';
+  }
+
+  @override
+  String nextBusNow(String line) {
+    return '$line llegando';
+  }
+
+  @override
+  String stepWalkTo(int minutes, String stop) {
+    return 'Camina $minutes min hasta $stop';
+  }
+
+  @override
+  String stepWalkToDestination(int minutes) {
+    return 'Camina $minutes min hasta tu destino';
+  }
+
+  @override
+  String stepRide(String lines, String towards) {
+    return 'Toma $lines hacia $towards';
+  }
+
+  @override
+  String stepGetOff(String stop) {
+    return 'Bájate en $stop';
+  }
+
+  @override
+  String get couldNotLocate => 'No se pudo obtener tu ubicación';
+
+  @override
+  String get openInGoogleMaps => 'Abrir esta búsqueda en Google Maps';
+
+  @override
+  String get goHere => 'Ir aquí';
+
+  @override
+  String get updateLocation => 'Actualizar mi ubicación';
+
+  @override
+  String get lineChoiceHint =>
+      'Cualquiera de estas rutas sirve; toca una para ver su recorrido';
+
+  @override
+  String get refreshTimes => 'Actualizar horarios';
+
+  @override
+  String get liveUnavailable =>
+      'Sin datos en vivo de MIO para algunos tramos: esos tiempos son aproximados.';
+
+  @override
+  String arriveAt(String time) {
+    return 'Llegas $time';
+  }
+
+  @override
+  String busLeavesAt(String line, String time, int minutes) {
+    return '$line pasa $time (en $minutes min)';
+  }
+
+  @override
+  String noLiveBus(int minutes) {
+    return 'Sin bus en vivo · espera aprox. $minutes min';
+  }
+
+  @override
+  String leavesAt(String time) {
+    return 'Pasa $time';
+  }
+
+  @override
+  String waitAbout(int minutes) {
+    return 'Espera ~$minutes min';
+  }
+
+  @override
+  String stopsCount(int stops) {
+    String _temp0 = intl.Intl.pluralLogic(
+      stops,
+      locale: localeName,
+      other: '$stops paradas',
+      one: '1 parada',
+    );
+    return '$_temp0';
+  }
 }

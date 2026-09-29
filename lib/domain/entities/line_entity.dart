@@ -1,5 +1,6 @@
 /// A MIO line, known to the service by its short name
 class TransitLine {
+  /// Number in the line catalog; 0 for a line the catalog leaves out
   final int id;
   final String name;
 

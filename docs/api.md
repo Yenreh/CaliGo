@@ -40,10 +40,13 @@ An array of stops, each with the buses on their way:
             "tiempoEstimadoDeSalida":1787429222000,"vehiculoId":"637001"}]}]
 ```
 
-`tiempoEstimadoDeSalida` is epoch milliseconds. Stops with no bus coming
-are left out. The service takes coordinates only and does not say where
-each stop is, so the app queries the same area from two nearby points and
-places each stop from the three distances.
+`tiempoEstimadoDeSalida` is epoch milliseconds. Each stop lists its next
+five buses at most, whatever their line, so a line missing from a busy
+stop may still be coming; stops with no bus coming are left out. The
+service takes coordinates only and does not say where each stop is. The
+routes below give every stop they call at, with the same ids; only for a
+stop they leave out does the app query the same area from two nearby
+points and place the stop from the three distances.
 
 ## Catalog, lines and buses
 
@@ -53,11 +56,29 @@ Base: `https://wsmio.siur.com.co:8083/apiMIO/jaxrs`
 | --- | --- | --- |
 | `stations` | every station: id, name, address, lat/lon | 7 days |
 | `linesByStop/{stop}` | lines serving a stop | 30 days |
-| `lines` | every line: `lineId`, `name` | 7 days |
+| `lines` | the line catalog: `lineId`, `name` | 7 days |
 | `linestops/{line}` | a line's route, by short name (`A47`): stops in order per direction (`orientation` 0/1, `stopSequence`, `stopId`, `stopNam`, lat/lon) | 7 days |
 | `linesOperation` | each line's first and last service, `HH:mm:ss` | 1 day |
 | `operations/{line}` | buses running now: `busNumber`, `gpsx`/`gpsy` as degrees times 10^7 | never |
-| `busInfo/{bus}` | the bus's trip, including its direction (`orientation`) | 10 minutes |
+| `busInfo/{bus}` | the bus's trip: direction (`orientation`), `tripId`, `startstop`, `endstop` | per trip |
+
+The catalog server does not compress its answers and sends no validators,
+so a copy past its age is fetched whole again. When that fails the old
+copy still answers, and for planning, week-old routes answer at once while
+new ones come in the background, two at a time.
+
+`lines` can leave out a line that runs, while `linesOperation` lists
+lines that do not: a line with hours but outside the catalog is used once
+the arrivals have shown it running within two weeks.
+
+A bus keeps its direction until the end of its trip, so `busInfo` is asked
+again every couple of minutes only while a bus is near its trip's last
+stop, and otherwise every 45 minutes.
+
+Stop names tell a station's platforms by a letter up to E and a number
+(`Universidades B1`). A `P` and a number is either two berths of one stop,
+a few metres apart, or the stops numbered along a road out of town, up to
+kilometres apart (`Vía La Buitrera P10`).
 
 ## Being a good client
 
@@ -65,6 +86,12 @@ Base: `https://wsmio.siur.com.co:8083/apiMIO/jaxrs`
   left alone for 1, 2, 4, 8 and at most 16 minutes; the first normal
   answer clears the wait. Rate limits are never retried.
 - Arrivals refresh every 30 s while a bus is within 5 minutes, every 60 s
-  within 15, otherwise every 120 s, and never in the background.
-- Nearby favorites share one request, identical requests in flight share
-  one answer, and what barely changes is cached as above.
+  within 15, otherwise every 120 s, and only while the screen listing them
+  is in view: never in the background, nor under another screen. A line's
+  buses are followed every 30 s on the same terms.
+- One request answers for every stop within 280 m of the point asked
+  around, so favorites and the stops of a trip are grouped to need as few
+  as possible, and a trip reuses areas asked about within a minute. With
+  a trip open, only its own stops are asked about again.
+- Identical requests in flight share one answer, and what barely changes
+  is cached as above.

@@ -11,6 +11,7 @@ import '../providers/lines_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/lab.dart';
 import '../widgets/map_parts.dart';
+import '../widgets/shown_on_screen.dart';
 import '../widgets/stop_details_sheet.dart';
 
 /// A line's route on the map, one direction at a time, with its buses
@@ -24,7 +25,7 @@ class LineScreen extends ConsumerStatefulWidget {
   ConsumerState<LineScreen> createState() => _LineScreenState();
 }
 
-class _LineScreenState extends ConsumerState<LineScreen> {
+class _LineScreenState extends ConsumerState<LineScreen> with ShownOnScreen {
   final _mapController = MapController();
   bool _mapReady = false;
   bool _creditsOpen = false;
@@ -36,6 +37,14 @@ class _LineScreenState extends ConsumerState<LineScreen> {
     _mapController.dispose();
     super.dispose();
   }
+
+  /// Out of view the buses are let go, which stops asking for them; back
+  /// in view they are asked for at once
+  @override
+  void shownChanged(bool shown) => setState(() {});
+
+  AsyncValue<List<LineBus>> _buses(String line) =>
+      shown ? ref.watch(lineBusesProvider(line)) : const AsyncValue.loading();
 
   /// Frame [stops] on the map
   void _fit(List<LineStop> stops) {
@@ -86,7 +95,7 @@ class _LineScreenState extends ConsumerState<LineScreen> {
     final l10n = AppLocalizations.of(context)!;
     final name = widget.line.name;
     final stops = ref.watch(lineStopsProvider(name));
-    final updatingBuses = ref.watch(lineBusesProvider(name)).isLoading;
+    final updatingBuses = _buses(name).isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -136,8 +145,9 @@ class _LineScreenState extends ConsumerState<LineScreen> {
     final l10n = AppLocalizations.of(context)!;
     final name = widget.line.name;
     final dark = ref.watch(settingsProvider.select((s) => s.darkMap));
+    final sharp = ref.watch(settingsProvider.select((s) => s.sharpMap));
     final tiles = tilesPalette(dark: dark);
-    final buses = ref.watch(lineBusesProvider(name));
+    final buses = _buses(name);
     final hours = ref.watch(lineHoursProvider).asData?.value[name];
 
     final directions = {for (final s in all) s.direction}.toList()..sort();
@@ -218,7 +228,7 @@ class _LineScreenState extends ConsumerState<LineScreen> {
                   },
                 ),
                 children: [
-                  mapTileLayer(context, dark: dark),
+                  mapTileLayer(context, dark: dark, sharp: sharp),
                   PolylineLayer(
                     polylines: [
                       Polyline(

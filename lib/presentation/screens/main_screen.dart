@@ -9,6 +9,7 @@ import '../widgets/card_item.dart';
 import '../widgets/card_refresh_listener.dart';
 import '../widgets/lab.dart';
 import '../widgets/live_clock.dart';
+import '../widgets/shown_on_screen.dart';
 import '../widgets/favorite_stop_card.dart';
 import '../providers/stops_provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -25,8 +26,7 @@ class MainScreen extends ConsumerStatefulWidget {
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends ConsumerState<MainScreen>
-    with WidgetsBindingObserver {
+class _MainScreenState extends ConsumerState<MainScreen> with ShownOnScreen {
   bool _watchingStops = false;
 
   /// Held so dispose does not have to reach for ref, which is unsafe
@@ -36,30 +36,15 @@ class _MainScreenState extends ConsumerState<MainScreen>
   StopsNotifier? _stopsNotifier;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _stopWatchingStops();
     super.dispose();
   }
 
+  /// No polling the arrivals service in the background, or under another
+  /// screen; back in view, whatever changed meanwhile is asked for
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Do not poll the arrivals service while in the background.
-    if (state == AppLifecycleState.resumed) {
-      if (ref.read(settingsProvider).showsStops) {
-        _startWatchingStops();
-        _stopsNotifier?.refreshArrivals();
-      }
-    } else {
-      _stopWatchingStops();
-    }
-  }
+  void shownChanged(bool shown) => _syncStopsWatch();
 
   /// Set on opening only, not on coming back from the background; cleared
   /// once the balances have been dealt with, which waits for the settings
@@ -81,31 +66,29 @@ class _MainScreenState extends ConsumerState<MainScreen>
     }
   }
 
-  void _syncStopsWatch(bool shouldWatch) {
+  void _syncStopsWatch() {
+    final shouldWatch = shown && ref.read(settingsProvider).showsStops;
     if (shouldWatch == _watchingStops) return;
-    shouldWatch ? _startWatchingStops() : _stopWatchingStops();
+    if (shouldWatch) {
+      _startWatchingStops();
+      _stopsNotifier!.refreshArrivals();
+    } else {
+      _stopWatchingStops();
+    }
   }
 
   void _startWatchingStops() {
     _watchingStops = true;
     _stopsNotifier ??= ref.read(stopsProvider.notifier);
-    _stopsNotifier!.startAutoRefresh(homeOnly: true);
+    _stopsNotifier!.startAutoRefresh(this, homeOnly: true);
   }
 
   void _stopWatchingStops() {
     _watchingStops = false;
-    _stopsNotifier?.stopAutoRefresh();
+    _stopsNotifier?.stopAutoRefresh(this);
   }
 
-  /// The stops screen takes the shared refresh over and stops it when it
-  /// closes, so hand it back to the home screen on return
-  Future<void> _openStops() async {
-    await context.push('/stops');
-    if (mounted && _watchingStops) {
-      _stopsNotifier?.startAutoRefresh(homeOnly: true);
-      _stopsNotifier?.refreshArrivals();
-    }
-  }
+  void _openStops() => context.push('/stops');
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +117,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncStopsWatch(showsStops);
+      _syncStopsWatch();
       _refreshBalancesIfDue();
     });
 
@@ -355,24 +338,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// A bar button's label on one line: with a large system font it shrinks
-/// to fit rather than wrapping or cutting a word in half
-class _BarLabel extends StatelessWidget {
-  final String text;
-
-  const _BarLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(text, maxLines: 1, softWrap: false),
-    );
-  }
-}
-
-/// The two management screens with the stop search between them,
-/// always in reach
+/// The two management screens with the stop search and the trip planner
+/// between them, always in reach. Icons only, so all four share one size.
 class _ManageBar extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback onStops;
@@ -397,37 +364,59 @@ class _ManageBar extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push('/cards'),
-                    icon: const Icon(Icons.credit_card_outlined, size: 18),
-                    label: _BarLabel(l10n.cardsShort),
-                  ),
+                _BarButton(
+                  icon: Icons.credit_card_outlined,
+                  tooltip: l10n.cardsShort,
+                  onPressed: () => context.push('/cards'),
                 ),
                 const SizedBox(width: 8),
-                // Looking a stop up without saving it, between the two lists
-                SizedBox(
-                  width: 52,
-                  child: Tooltip(
-                    message: l10n.findStops,
-                    child: OutlinedButton(
-                      onPressed: () => context.push('/search'),
-                      style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-                      child: const Icon(Icons.search_rounded, size: 24),
-                    ),
-                  ),
+                _BarButton(
+                  icon: Icons.search_rounded,
+                  tooltip: l10n.findStops,
+                  onPressed: () => context.push('/search'),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onStops,
-                    icon: const Icon(Icons.signpost_outlined, size: 18),
-                    label: _BarLabel(l10n.favoritesShort),
-                  ),
+                _BarButton(
+                  icon: Icons.directions_outlined,
+                  tooltip: l10n.planTrip,
+                  onPressed: () => context.push('/plan'),
+                ),
+                const SizedBox(width: 8),
+                _BarButton(
+                  icon: Icons.signpost_outlined,
+                  tooltip: l10n.favoritesShort,
+                  onPressed: onStops,
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A bar button: an icon, named by its tooltip
+class _BarButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _BarButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Tooltip(
+        message: tooltip,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+          child: Icon(icon, size: 24),
         ),
       ),
     );

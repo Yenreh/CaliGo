@@ -34,6 +34,9 @@ class SettingsState {
   /// Dark map tiles, chosen apart from the app theme: dark tiles are
   /// harder to read, so the map stays light unless asked
   final bool darkMap;
+
+  /// Map tiles at the screen's full resolution; off saves mobile data
+  final bool sharpMap;
   final bool isLoading;
 
   static const int defaultFarePrice = 3500;
@@ -44,6 +47,7 @@ class SettingsState {
     this.homeContent = HomeContent.cards,
     this.sortStopsByProximity = true,
     this.darkMap = false,
+    this.sharpMap = true,
     this.refreshBalancesOnOpen = true,
     this.isLoading = true,
   });
@@ -54,6 +58,7 @@ class SettingsState {
     HomeContent? homeContent,
     bool? sortStopsByProximity,
     bool? darkMap,
+    bool? sharpMap,
     bool? refreshBalancesOnOpen,
     bool? isLoading,
   }) {
@@ -63,6 +68,7 @@ class SettingsState {
       homeContent: homeContent ?? this.homeContent,
       sortStopsByProximity: sortStopsByProximity ?? this.sortStopsByProximity,
       darkMap: darkMap ?? this.darkMap,
+      sharpMap: sharpMap ?? this.sharpMap,
       refreshBalancesOnOpen:
           refreshBalancesOnOpen ?? this.refreshBalancesOnOpen,
       isLoading: isLoading ?? this.isLoading,
@@ -89,6 +95,7 @@ class SettingsState {
         'homeContent': homeContent.index,
         'sortStopsByProximity': sortStopsByProximity,
         'darkMap': darkMap,
+        'sharpMap': sharpMap,
         'refreshBalancesOnOpen': refreshBalancesOnOpen,
       };
 
@@ -100,6 +107,7 @@ class SettingsState {
           HomeContent.values[json['homeContent'] as int? ?? 0],
       sortStopsByProximity: json['sortStopsByProximity'] as bool? ?? true,
       darkMap: json['darkMap'] as bool? ?? false,
+      sharpMap: json['sharpMap'] as bool? ?? true,
       refreshBalancesOnOpen: json['refreshBalancesOnOpen'] as bool? ?? true,
       isLoading: false,
     );
@@ -175,6 +183,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   void setDarkMap(bool enabled) {
     state = state.copyWith(darkMap: enabled);
+    _saveSettings();
+  }
+
+  void setSharpMap(bool enabled) {
+    state = state.copyWith(sharpMap: enabled);
     _saveSettings();
   }
 

@@ -1,6 +1,9 @@
+import '../../domain/arrival_areas.dart';
 import '../../domain/entities/line_entity.dart';
 import '../../domain/entities/stop_entity.dart';
 import '../../domain/repositories/stops_repository.dart';
+import '../../domain/trip_timing.dart';
+import '../datasources/api_exception.dart';
 import '../datasources/json_cache.dart';
 import '../datasources/stops_local_datasource.dart';
 import '../datasources/stops_remote_datasource.dart';
@@ -68,6 +71,67 @@ class StopsRepositoryImpl implements StopsRepository {
   @override
   Future<List<LineStop>> getLineStops(String line) =>
       _remoteDatasource.getLineStops(line);
+
+  /// Requests at once while loading every route: few enough to be kind
+  /// to the service, enough to finish in seconds the first time
+  static const int _routesAtOnce = 4;
+
+  @override
+  Future<Map<String, List<LineStop>>> getAllLineStops({
+    void Function(int done, int total)? onProgress,
+  }) async {
+    // A network a week old plans as well as a new one: it answers at once
+    // and the new one comes in the background, for next time
+    final lines = await _remoteDatasource.getLines(staleOk: true);
+    final routes = <String, List<LineStop>>{};
+    var done = 0;
+    var failed = 0;
+    ApiException? lastError;
+
+    final pending = lines.map((l) => l.name).toList();
+    Future<void> worker() async {
+      while (pending.isNotEmpty) {
+        final line = pending.removeLast();
+        try {
+          routes[line] = await _remoteDatasource.getLineStops(
+            line,
+            staleOk: true,
+          );
+        } on ApiException catch (e) {
+          failed++;
+          lastError = e;
+        }
+        onProgress?.call(++done, lines.length);
+      }
+    }
+
+    await Future.wait(List.generate(_routesAtOnce, (_) => worker()));
+
+    // A few missing lines still leave a network worth planning on
+    if (lines.isNotEmpty && failed * 2 > lines.length) throw lastError!;
+    return routes;
+  }
+
+  @override
+  Future<LiveArrivals> arrivalsFor(
+    List<LineStop> stops, {
+    Duration maxAge = const Duration(minutes: 1),
+  }) => _remoteDatasource.arrivalsFor(stops, maxAge: maxAge);
+
+  @override
+  Future<Map<String, Duration>> lineHeadways(DateTime at) =>
+      _remoteDatasource.lineHeadways(at);
+
+  @override
+  Future<void> observeRides(Map<String, double> readings) =>
+      _remoteDatasource.observeRides(readings);
+
+  @override
+  Future<Map<String, double>> rideFactors() => _remoteDatasource.rideFactors();
+
+  @override
+  Future<Map<String, GeoPoint>> stopPositions(Iterable<String> stopIds) =>
+      _remoteDatasource.stopPositions(stopIds);
 
   @override
   Future<List<LineBus>> getLineBuses(String line) =>
