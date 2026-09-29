@@ -598,7 +598,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get searchPlace => 'Search a station or stop';
+  String get searchPlace => 'Search a station, stop or address';
+
+  @override
+  String searchAsAddress(String text) {
+    return 'Search “$text” as an address or place';
+  }
+
+  @override
+  String get addressesSection => 'Addresses and places';
+
+  @override
+  String get addressCrossing => 'Crossing of its two streets, approximate';
+
+  @override
+  String get addressNearStop => 'MIO stop at that crossing, approximate';
+
+  @override
+  String get addressNotFound =>
+      'Nothing found. Try a crossing, such as “Calle 5 con Carrera 38”, or pick the point on the map.';
 
   @override
   String get stopsSection => 'Stops';

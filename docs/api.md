@@ -80,6 +80,17 @@ Stop names tell a station's platforms by a letter up to E and a number
 a few metres apart, or the stops numbered along a road out of town, up to
 kilometres apart (`Vía La Buitrera P10`).
 
+## Addresses
+
+The trip planner looks addresses and places up with Android's own
+geocoder, Google's through Play services, with no key: within Cali, and
+only when asked. Where Google has no address ranges for a block it
+answers with another address that shares a number, even as an exact
+match, so an address is taken only with the numbers typed. Failing that,
+the app asks for the crossing of its two streets, and then looks for the
+MIO stop named after that crossing. A phone without Play services only
+gets the stops.
+
 ## Being a good client
 
 - A service that answers HTTP 429, or keeps failing after one retry, is

@@ -606,7 +606,25 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get searchPlace => 'Busca una estación o parada';
+  String get searchPlace => 'Busca una estación, parada o dirección';
+
+  @override
+  String searchAsAddress(String text) {
+    return 'Buscar «$text» como dirección o lugar';
+  }
+
+  @override
+  String get addressesSection => 'Direcciones y lugares';
+
+  @override
+  String get addressCrossing => 'Cruce de sus dos calles, aproximado';
+
+  @override
+  String get addressNearStop => 'Parada del MIO en ese cruce, aproximado';
+
+  @override
+  String get addressNotFound =>
+      'No encontramos nada. Prueba con un cruce, como «Calle 5 con Carrera 38», o elige el punto en el mapa.';
 
   @override
   String get stopsSection => 'Paradas';

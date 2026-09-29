@@ -1151,8 +1151,38 @@ abstract class AppLocalizations {
   /// No description provided for @searchPlace.
   ///
   /// In en, this message translates to:
-  /// **'Search a station or stop'**
+  /// **'Search a station, stop or address'**
   String get searchPlace;
+
+  /// No description provided for @searchAsAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Search “{text}” as an address or place'**
+  String searchAsAddress(String text);
+
+  /// No description provided for @addressesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses and places'**
+  String get addressesSection;
+
+  /// No description provided for @addressCrossing.
+  ///
+  /// In en, this message translates to:
+  /// **'Crossing of its two streets, approximate'**
+  String get addressCrossing;
+
+  /// No description provided for @addressNearStop.
+  ///
+  /// In en, this message translates to:
+  /// **'MIO stop at that crossing, approximate'**
+  String get addressNearStop;
+
+  /// No description provided for @addressNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found. Try a crossing, such as “Calle 5 con Carrera 38”, or pick the point on the map.'**
+  String get addressNotFound;
 
   /// No description provided for @stopsSection.
   ///

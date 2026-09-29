@@ -27,6 +27,8 @@ newer release from Settings > About, on request only.
 - **Map**: look up stops anywhere in the city, on CARTO maps, light or dark
 - **Lines**: each line's route, its live buses going each way, and its
   hours
+- **Trip planner**: from an address, place, stop or point on the map to
+  another, timed with the buses on their way
 - **Local storage**: everything stays on the device, in SQLite, with JSON
   export and import
 - **Languages**: Spanish and English

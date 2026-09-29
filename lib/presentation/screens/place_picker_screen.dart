@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../domain/address_search.dart';
 import '../../domain/entities/trip_entity.dart';
 import '../../l10n/app_localizations.dart';
 import '../providers/settings_provider.dart';
@@ -13,7 +14,8 @@ import '../widgets/lab.dart';
 import '../widgets/map_parts.dart';
 
 /// Choose where a trip starts or ends: the device, a point on the map,
-/// a favorite, a station or any stop along the routes
+/// a favorite, a station, any stop along the routes, or an address or
+/// place looked up on request
 class PlacePickerScreen extends ConsumerStatefulWidget {
   final String title;
 
@@ -40,6 +42,12 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
   final _controller = TextEditingController();
   String _query = '';
   bool _locating = false;
+
+  /// The text last looked up as an address or place, and what it found:
+  /// shown while the box still holds that text
+  String? _searched;
+  List<AddressMatch> _found = const [];
+  bool _searching = false;
 
   /// Stops matching a query, at most: the list is for picking, not
   /// browsing every platform in the city
@@ -104,6 +112,30 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
     );
   }
 
+  /// Look the text up as an address or a place: only on request, since
+  /// each search asks Google through the phone
+  Future<void> _findAddress() async {
+    final text = _controller.text.trim();
+    if (text.length < 3 || _searching) return;
+    setState(() => _searching = true);
+    final network = ref.read(transitNetworkProvider).asData?.value.network;
+    var found = const <AddressMatch>[];
+    try {
+      found = await AddressSearch(
+        geocode: ref.read(deviceGeocoderProvider).search,
+        stops: network?.stops ?? const [],
+      ).find(text);
+    } catch (_) {
+      // A search that fails finds nothing: the map is still there
+    }
+    if (!mounted) return;
+    setState(() {
+      _searching = false;
+      _searched = text;
+      _found = found;
+    });
+  }
+
   void _choose(String name, double latitude, double longitude) {
     Navigator.of(
       context,
@@ -113,7 +145,9 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final needle = _fold(_query.trim());
+    final p = LabPalette.of(context);
+    final typed = _query.trim();
+    final needle = _fold(typed);
     bool matches(String text) => needle.isEmpty || _fold(text).contains(needle);
 
     final network = ref.watch(transitNetworkProvider).asData?.value.network;
@@ -141,7 +175,9 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
             child: TextField(
               controller: _controller,
               autofocus: true,
+              textInputAction: TextInputAction.search,
               onChanged: (value) => setState(() => _query = value),
+              onSubmitted: (_) => _findAddress(),
               decoration: InputDecoration(
                 hintText: l10n.searchPlace,
                 prefixIcon: const Icon(Icons.search_rounded),
@@ -151,6 +187,56 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
           Expanded(
             child: ListView(
               children: [
+                if (typed.length >= 3) ...[
+                  if (_searched == typed)
+                    ..._section(l10n.addressesSection, [
+                      if (_found.isEmpty)
+                        ListTile(
+                          leading: const Icon(Icons.search_off_rounded),
+                          title: Text(
+                            l10n.addressNotFound,
+                            style: LabText.statusLine(p),
+                          ),
+                        ),
+                      for (final match in _found)
+                        _tile(
+                          icon: switch (match.precision) {
+                            AddressPrecision.stop => Icons.place_outlined,
+                            _ => Icons.location_on_outlined,
+                          },
+                          title: match.name,
+                          subtitle: switch (match.precision) {
+                            AddressPrecision.exact => null,
+                            AddressPrecision.place => match.detail,
+                            AddressPrecision.crossing => l10n.addressCrossing,
+                            AddressPrecision.stop => l10n.addressNearStop,
+                          },
+                          onTap:
+                              () => _choose(
+                                match.name,
+                                match.latitude,
+                                match.longitude,
+                              ),
+                        ),
+                    ])
+                  else
+                    ListTile(
+                      leading: const Icon(Icons.travel_explore_rounded),
+                      title: Text(l10n.searchAsAddress(typed)),
+                      trailing:
+                          _searching
+                              ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : null,
+                      onTap: _searching ? null : _findAddress,
+                    ),
+                  const Divider(),
+                ],
                 ListTile(
                   leading: const Icon(Icons.my_location_rounded),
                   title: Text(l10n.myLocation),

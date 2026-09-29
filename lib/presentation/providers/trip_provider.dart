@@ -3,9 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/device_geocoder.dart';
 import '../../domain/entities/trip_entity.dart';
 import '../../domain/trip_planner.dart';
 import 'stops_provider.dart';
+
+/// Android's own geocoder, for addresses and places typed in the planner
+final deviceGeocoderProvider = Provider<DeviceGeocoder>(
+  (ref) => DeviceGeocoder(),
+);
 
 /// The route network as it loads: how many lines are in, then the
 /// network itself
