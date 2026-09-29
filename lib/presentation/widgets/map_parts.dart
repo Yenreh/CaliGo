@@ -34,10 +34,20 @@ LabPalette tilesPalette({required bool dark}) =>
 final http.Client _tileClient = RetryClient(http.Client());
 
 /// Tiles from the network, through the shared client and the disk cache
-TileProvider _tileProvider() => NetworkTileProvider(
-  httpClient: _tileClient,
-  cachingProvider: MapTileCache.provider,
-);
+TileProvider _tileProvider({Map<String, String>? headers}) =>
+    NetworkTileProvider(
+      // Mutable: the tile layer adds its User-Agent to it
+      headers: {...?headers},
+      httpClient: _tileClient,
+      cachingProvider: MapTileCache.provider,
+    );
+
+/// How CARTO tells this app from anyone else holding the key: its API
+/// key is restricted to this package signed with this certificate
+const Map<String, String> _cartoAppHeaders = {
+  'X-Android-Package': AppInfo.packageId,
+  'X-Android-Cert': AppInfo.signingSha1,
+};
 
 /// Voyager's cream paper sits close to the light theme; Dark Matter
 /// is the dark one, only when the settings ask for it. OpenStreetMap
@@ -71,7 +81,7 @@ Widget mapTileLayer(
     // Only what is on screen: the default ring of hidden tiles around
     // it roughly triples what a first look downloads
     panBuffer: 0,
-    tileProvider: _tileProvider(),
+    tileProvider: _tileProvider(headers: _cartoAppHeaders),
   );
 }
 
